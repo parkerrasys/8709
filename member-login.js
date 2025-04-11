@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const githubUser = 'parkerrasys';
     const githubRepo = '8709-Storage';
     const passwordFilePath = 'users.txt';
-    const githubToken = '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';
+    const githubToken = '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';
     
     // GitHub API endpoints
     const repoContentsUrl = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${passwordFilePath}`;
