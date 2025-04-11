@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Member Login - Pathfinder Tech Robotics</title>
+    <link rel="icon" href="prtlogo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="member-login.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <div class="logo-container">
+                <img src="../prtlogo.ico" alt="Team Logo" class="logo-img">
+                <div class="logo-text">
+                    <h1>Pathfinder Tech Robotics</h1>
+                    <p>Team 8709</p>
+                </div>
+            </div>
+            
+            <nav>
+                <ul>
+                    <li><a href="index.html">Return to Main Site</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- Login Section -->
+    <section class="login-section">
+        <div class="container">
+            <h2 class="section-title">Team Member <span>Login</span></h2>
+            
+            <div class="login-container">
+                <div class="login-form">
+                    <div class="form-group">
+                        <label for="memberSelect">Select Your Name:</label>
+                        <select id="memberSelect" name="memberSelect">
+                            <option value="">-- Select Your Name --</option>
+                            <option value="parker_rasys">Parker Rasys</option>
+                            <option value="jacob_stehlin">Jacob Stehlin</option>
+                            <option value="kaleb_myrick">Kaleb Myrick</option>
+                            <!-- Add more members as needed -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="memberPassword">Password:</label>
+                        <input type="password" id="memberPassword" name="memberPassword" placeholder="Enter your password">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="loginButton" class="btn">Login</button>
+                    </div>
+                    
+                    <div id="loginError" class="error-message"></div>
+                    
+                    <div class="forgot-password">
+                        <p>Forgot your password? Contact your team captain or mentor.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>Pathfinder Tech Robotics</h2>
+                    <p>FRC Team 8709</p>
+                    <p>Building a Legacy through Innovation and Excellence</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html#about">About Us</a></li>
+                        <li><a href="index.html#programs">Activities</a></li>
+                        <li><a href="../media">Media</a></li>
+                        <li><a href="../sponsors">Sponsors</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Pathfinder Tech Robotics Team 8709. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="member-login.js"></script>
+    <script>
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            return false;
+        }, true);  
+    </script>
+</body>
+</html>

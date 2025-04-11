@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Area - Pathfinder Tech Robotics</title>
+    <link rel="icon" href="prtlogo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="member-area.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <div class="logo-container">
+                <img src="../prtlogo.ico" alt="Team Logo" class="logo-img">
+                <div class="logo-text">
+                    <h1>Pathfinder Tech Robotics</h1>
+                    <p>Team 8709</p>
+                </div>
+            </div>
+            
+            <nav>
+                <ul>
+                    <li><a href="#meetings">Meetings</a></li>
+                    <li><a href="#schedule">Schedule</a></li>
+                    <li><a href="#tasks">Tasks</a></li>
+                    <li><a href="#resources">Resources</a></li>
+                    <li><a href="#documents">Documents</a></li>
+                    <li><a href="index.html" id="logoutButton">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- Welcome Hero Section -->
+    <section class="welcome">
+        <div class="container">
+            <h2>Welcome, <span id="memberNameDisplay">Team Member</span>!</h2>
+            <p class="tagline">Team Member Portal</p>
+            <p class="last-login">Last login: <span id="lastLoginTime">April 10, 2025, 14:30</span></p>
+        </div>
+    </section>
+    
+    <!-- Upcoming Meetings Section -->
+    <section id="meetings" class="meetings">
+        <div class="container">
+            <h2 class="section-title">Upcoming Meetings</h2>
+            
+            <div class="card-grid">
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Schedule Section -->
+    <section id="schedule" class="schedule">
+        <div class="container">
+            <h2 class="section-title">Meeting Schedule</h2>
+            
+            <div class="schedule-container">
+                <div class="schedule-grid">
+                    <div class="schedule-header">Day</div>
+                    <div class="schedule-header">Time</div>
+                    <div class="schedule-header">Location</div>
+                    <div class="schedule-header">Details</div>
+                    
+                    <div class="schedule-item">Monday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Tuesday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Wednesday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Thursday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Friday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Saturday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    
+                    <div class="schedule-item">Sunday</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                    <div class="schedule-item">N/A</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tasks Section -->
+    <section id="tasks" class="tasks">
+        <div class="container">
+            <h2 class="section-title">Team Tasks</h2>
+            
+            <div class="task-filters">
+                <button class="task-filter active" data-filter="all">All Tasks</button>
+                <button class="task-filter" data-filter="mechanical">Mechanical</button>
+                <button class="task-filter" data-filter="programming">Programming</button>
+                <button class="task-filter" data-filter="electrical">Electrical</button>
+            </div>
+            
+            <div class="task-list">
+                <div class="task-item" data-category="mechanical">
+                    <div class="task-header">
+                        <h3>Mechanical Example</h3>
+                        <span class="task-priority high">High Priority</span>
+                    </div>
+                    <div class="task-details">
+                        <p>Fix Elevator.</p>
+                        <p><strong>Assigned to:</strong> Mechanical Team</p>
+                        <p><strong>Due:</strong> N/A</p>
+                        <p><strong>Status:</strong> Not Started</p>
+                    </div>
+                </div>
+                
+                <div class="task-item" data-category="programming">
+                    <div class="task-header">
+                        <h3>Programming Example</h3>
+                        <span class="task-priority high">Medium Priority</span>
+                    </div>
+                    <div class="task-details">
+                        <p>Work on offseason robot.</p>
+                        <p><strong>Assigned to:</strong> Programming Team</p>
+                        <p><strong>Due:</strong> N/A</p>
+                        <p><strong>Status:</strong> Not Started</p>
+                    </div>
+                </div>
+                
+                <div class="task-item" data-category="electrical">
+                    <div class="task-header">
+                        <h3>Electrical Example</h3>
+                        <span class="task-priority medium">Low Priority</span>
+                    </div>
+                    <div class="task-details">
+                        <p>Practice wireing for next year.</p>
+                        <p><strong>Assigned to:</strong> Electrical Team</p>
+                        <p><strong>Due:</strong> N/A</p>
+                        <p><strong>Status:</strong> Not Started</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Resources Section -->
+    <section id="resources" class="resources">
+        <div class="container">
+            <h2 class="section-title">Team Resources</h2>
+            
+            <div class="resources-grid">
+                <!-- <div class="resource-card">
+                    <div class="resource-icon">📁</div>
+                    <h3>CAD Files</h3>
+                    <p>Access the latest CAD models and designs for the robot.</p>
+                    <a href="#" class="resource-link">Access Files</a>
+                </div> -->
+                
+                <div class="resource-card">
+                    <div class="resource-icon">💻</div>
+                    <h3>Code Repository</h3>
+                    <p>GitHub repository with our robot code.</p>
+                    <a href="https://github.com/FRC-8709" target="_blank" class="resource-link">View Repository</a>
+                </div>
+                
+                <!-- <div class="resource-card">
+                    <div class="resource-icon">📅</div>
+                    <h3>Team Calendar</h3>
+                    <p>Comprehensive calendar with all team events and deadlines.</p>
+                    <a href="#" class="resource-link">View Calendar</a>
+                </div> -->
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>Pathfinder Tech Robotics</h2>
+                    <p>FRC Team 8709</p>
+                    <p>Building a Legacy through Innovation and Excellence</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Member Links</h3>
+                    <ul>
+                        <li><a href="#meetings">Meetings</a></li>
+                        <li><a href="#schedule">Schedule</a></li>
+                        <li><a href="#tasks">Tasks</a></li>
+                        <li><a href="#resources">Resources</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Team Contacts</h3>
+                    <ul>
+                        <li>Team Leads:</li><li><a href="mailto:jacob.stehlin@pathfinderstudents.org">Jacob</a> | <a href="mailto:kaleb.myrick@pathfinderstudents.org">Kaleb</a> | <a href="mailto:parker.rasys@pathfinderstudents.org">Parker</a> | <a href="mailto:leeann.murdza@pathfinderstudents.org">Leeann</a></li>
+                        
+                        <br>
+                        <li>Mentors:</li>
+                        <li><a href="mailto:bren@pathfindertech.org">Mr. Bren</a> | <a href="mailto:nizio@pathfindertech.org">Mr. Nizio</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Pathfinder Tech Robotics Team 8709. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="member-area.js"></script>
+    <script>
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            return false;
+        }, true);
+    </script>
+</body>
+</html>
