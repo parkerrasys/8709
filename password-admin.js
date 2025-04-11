@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
-        githubToken: process.env.EDIT_TOKEN || '',
+        githubToken: process.env.EDIT_TOKEN,
         defaultPassword: '1234'
     };
     
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(adminPasswordUrl, {
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token github_pat_${config.githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -363,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Fetching password file from:', repoContentsUrl);
             const response = await fetch(repoContentsUrl, {
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token github_pat_${config.githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(repoContentsUrl, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token github_pat_${config.githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
