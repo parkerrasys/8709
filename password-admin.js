@@ -1,16 +1,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Configuration - Replace with your actual GitHub details
     const config = {
-        githubUser: 'parkerrasys',
-        githubRepo: '8709-Storage',
-        passwordFilePath: 'users.txt',
-        adminPasswordFilePath: 'admin-password.txt',
-        // Updated token with read/write permissions
-        githubToken: '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',
-        // Default password for new users
-        defaultPassword: '1234'
+        githubUser: ENV.GITHUB_USER,
+        githubRepo: ENV.GITHUB_REPO,
+        passwordFilePath: ENV.PASSWORD_FILE_PATH,
+        adminPasswordFilePath: ENV.ADMIN_PASSWORD_FILE_PATH,
+        githubToken: ENV.GITHUB_RW_TOKEN,
+        defaultPassword: ENV.DEFAULT_PASSWORD
     };
-    
+
     // DOM Elements
     const adminLoginForm = document.getElementById('adminLoginForm');
     const passwordManagement = document.getElementById('passwordManagement');

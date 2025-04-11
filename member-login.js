@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const githubUser = 'parkerrasys';
     const githubRepo = '8709-Storage';
     const passwordFilePath = 'users.txt';
-    const githubToken = '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'; // Read-only token
+    const githubToken = ENV.GITHUB_READ_TOKEN;
     
     // GitHub API endpoints
     const repoContentsUrl = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${passwordFilePath}`;
@@ -125,29 +125,29 @@ document.addEventListener('DOMContentLoaded', function() {
     function attemptLogin() {
         const selectedMember = memberSelect.value;
         const enteredPassword = memberPassword.value;
-        
+
         // Clear previous error messages
         loginError.textContent = '';
-        
+
         // Check if a member was selected
         if (!selectedMember) {
             loginError.textContent = 'Please select your name.';
             return;
         }
-        
+
         // Check if password was entered
         if (!enteredPassword) {
             loginError.textContent = 'Please enter your password.';
             return;
         }
-        
+
         // Check if the password is correct for the selected member
         if (validPasswords[selectedMember].password === enteredPassword) {
             // Store login status in session storage
             sessionStorage.setItem('memberLoggedIn', 'true');
             sessionStorage.setItem('memberName', selectedMember);
             sessionStorage.setItem('memberDisplayName', validPasswords[selectedMember].displayName);
-            
+
             // Redirect to member area
             window.location.href = 'member-area.html';
         } else {
