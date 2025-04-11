@@ -1,0 +1,18 @@
+name: Run JavaScript with Secrets
+
+on: [push, workflow_dispatch]
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Run script
+        env:
+          EDIT_TOKEN: ${{ secrets.EDIT_TOKEN }}
+          READ_TOKEN: ${{ secrets.READ_TOKEN }}
+        run: node member-area.js
