@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(repoContentsUrl, {
                 headers: {
-                    'Authorization': `token github_pat_${githubToken}`,
+                    'Authorization': `token github_pat_11BMCN2TY0uYrzBf4Y2eRO_am1fWexnctjpbPTaKj6${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
