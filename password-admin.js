@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
-        githubToken: process.env.EDIT_TOKEN,
+        githubToken: process.env.EDIT_TOKEN || '',
         defaultPassword: '1234'
     };
     
