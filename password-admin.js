@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
         // Updated token with read/write permissions
-        githubToken: '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',
+        githubToken: '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',
         // Default password for new users
         defaultPassword: '1234'
     };
