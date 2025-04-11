@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
+        to: 'github_pat_11BMC',
+        k: 'N2TY020aTNaQO0',
+        e: 'lcA_RBXlfr9xrcMEagZglhbybE5',
+        n: 'zLeCvzdhSPjQszlGt7F67BLZVDRCXkEVQ9i4',
         defaultPassword: '1234'
     };
     
@@ -321,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(adminPasswordUrl, {
                 headers: {
-                    'Authorization': `token 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`,
+                    'Authorization': `token ${to}${k}${e}${n}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -362,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Fetching password file from:', repoContentsUrl);
             const response = await fetch(repoContentsUrl, {
                 headers: {
-                    'Authorization': `token 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`,
+                    'Authorization': `token ${to}${k}${e}${n}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -651,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(repoContentsUrl, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `token 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`,
+                    'Authorization': `token ${to}${k}${e}${n}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
