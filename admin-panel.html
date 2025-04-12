@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Password Management - Pathfinder Tech Robotics</title>
-    <link rel="icon" href="prtlogo.ico" type="image/x-icon">
-    <link rel="stylesheet" href="member-login.css">
+    <link rel="icon" href="./ptrlogo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./admin-panel.html">
     <style>
         .admin-container {
             max-width: 800px;
@@ -36,7 +36,15 @@
         
         .actions-cell {
             display: flex;
-            gap: 10px;
+            gap: 5px;
+            justify-content: flex-start;
+            align-items: center;
+            white-space: nowrap;
+        }
+        
+        .actions-cell button {
+            padding: 4px 8px;
+            min-width: auto;
         }
         
         .btn-small {
@@ -99,6 +107,33 @@
             font-style: italic;
             color: #5c9bd6;
         }
+
+        .search-container {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #1d5280;
+            background-color: #0d314e;
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #5c9bd6;
+            box-shadow: 0 0 0 2px rgba(92, 155, 214, 0.25);
+        }
+
+        .search-stats {
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #5c9bd6;
+        }
     </style>
 </head>
 <body>
@@ -106,7 +141,7 @@
     <header>
         <div class="container header-content">
             <div class="logo-container">
-                <img src="prtlogo.ico" alt="Team Logo" class="logo-img">
+                <img src="./ptrlogo.ico" alt="Team Logo" class="logo-img">
                 <div class="logo-text">
                     <h1>Pathfinder Tech Robotics</h1>
                     <p>Team 8709</p>
@@ -147,7 +182,6 @@
                     <div id="loadingIndicator" class="loading">Loading user data...</div>
                     
                     <div id="passwordContent" style="display: none;">
-                        <h3>Current Users</h3>
                         <div class="password-list">
                             <table id="userTable">
                                 <thead>
@@ -158,28 +192,32 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
+                                <h3>Add New User</h3>
+                                <div class="add-user-form">
+                                    <div class="form-group">
+                                        <label for="newUsername">Username (e.g., john_doe):</label>
+                                        <input type="text" id="newUsername" name="newUsername" placeholder="Enter username">
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="newPassword">Password:</label>
+                                        <input type="text" id="newPassword" name="newPassword" placeholder="Enter password">
+                                    </div>
+                                    
+                                    <div class="form-actions">
+                                        <button id="addUserButton" class="btn">Add User</button>
+                                    </div>
+                                </div>
+                                <div class="search-container">
+                                    <input type="text" id="userSearchInput" placeholder="Search users..." class="search-input">
+                                    <div class="search-stats" id="searchStats">Showing all users</div>
+                                </div>
                                 <tbody id="userTableBody">
                                     <!-- User data will be populated here -->
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <h3>Add New User</h3>
-                        <div class="add-user-form">
-                            <div class="form-group">
-                                <label for="newUsername">Username (e.g., john_doe):</label>
-                                <input type="text" id="newUsername" name="newUsername" placeholder="Enter username">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="newPassword">Password:</label>
-                                <input type="text" id="newPassword" name="newPassword" placeholder="Enter password">
-                            </div>
-                            
-                            <div class="form-actions">
-                                <button id="addUserButton" class="btn">Add User</button>
-                            </div>
-                        </div>
+                    
                         
                         <div class="form-actions button-container">
                             <button id="logoutButton" class="btn btn-secondary">Logout</button>
@@ -218,6 +256,12 @@
                         
     <script src="password-admin.js"></script>
     <script>
+        const allowedReferrer = "member-area.html";
+        
+        if (!document.referrer.includes(allowedReferrer)) {
+            window.location.href = "./index.html";
+        }
+
         document.addEventListener('contextmenu', function(event) {
             event.preventDefault();
             return false;

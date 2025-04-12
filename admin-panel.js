@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const newPassword = document.getElementById('newPassword');
     const addUserButton = document.getElementById('addUserButton');
     const logoutButton = document.getElementById('logoutButton') || createLogoutButton();
+
+    const userSearchInput = document.getElementById('userSearchInput');
+    const searchStats = document.getElementById('searchStats');
+    let currentSearchTerm = '';
     
     const saveChangesButton = document.getElementById('saveChangesButton');
     if (saveChangesButton) {
@@ -56,6 +60,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let isEditorFocused = false;
 
     let githubToken = '';
+
+    userSearchInput.addEventListener('input', function(event) {
+        currentSearchTerm = event.target.value.toLowerCase().trim();
+        renderUserTable();
+    });
 
     async function fetchGithubToken() {
         try {
@@ -504,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             .user-row td input.admin {
-                border-left: 3px solid #FFD700;
+                border-left: 3px solid rgb(170, 145, 0);
                 font-weight: bold;
             }
             
@@ -513,8 +522,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 font-weight: bold;
             }
             
-            .user-row td input.student {
-                border-left: 3px solid #5c9bd6;
+            .user-row td input.member {
+                border-left: 3px solid rgb(148, 203, 255);
+            }
+
+            .user-row td input.teamlead {
+                border-left: 3px solid rgb(37, 119, 156);
             }
             
             .user-row td input.guest {
@@ -598,16 +611,25 @@ document.addEventListener('DOMContentLoaded', function() {
         indicator.style.display = 'none';
     }
     
-    function getUserRole(username) {
-        if (username.startsWith('admin_')) {
-            return 'admin';
-        } else if (username.startsWith('mentor_')) {
-            return 'mentor';
-        } else if (username.startsWith('guest_')) {
-            return 'guest';
-        } else {
-            return 'student';
+    function getUserRole(user) {
+        
+        // If passed a user object with roles array
+        if (user.roles && user.roles.length > 0) {
+            // Priority order: admin > mentor > guest > student
+            if (user.roles.includes('Mentor')) {
+                return 'mentor';
+            } else if (user.roles.includes('Admin')) {
+                return 'admin';
+            } else if (user.roles.includes('Guest')) {
+                return 'guest';
+            } else if (user.roles.includes('Team Lead')) {
+                return 'teamlead';
+            } else {
+                return 'member';
+            }
         }
+        
+        return 'member'; // Default
     }
     
     function initializePage() {
@@ -783,35 +805,56 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderUserTable() {
         userTableBody.innerHTML = '';
 
-        usersData.forEach((user, index) => {
+        // Filter users based on search term
+        const filteredUsers = usersData.filter(user => {
+            const searchFields = [
+                user.username.toLowerCase(),
+                user.displayName.toLowerCase(),
+                user.roles.join(' ').toLowerCase()
+            ];
+
+            return currentSearchTerm === '' || 
+                   searchFields.some(field => field.includes(currentSearchTerm));
+        });
+
+        // Update search stats
+        if (currentSearchTerm) {
+            searchStats.textContent = `Showing ${filteredUsers.length} of ${usersData.length} users`;
+        } else {
+            searchStats.textContent = `Showing all ${usersData.length} users`;
+        }
+
+        filteredUsers.forEach((user, filteredIndex) => {
+            // Get the original index in the full usersData array
+            const originalIndex = usersData.indexOf(user);
+
             const row = document.createElement('tr');
             row.className = 'user-row';
-            row.setAttribute('data-index', index);
+            row.setAttribute('data-index', originalIndex);
 
             // Username cell
             const usernameCell = document.createElement('td');
             const usernameInput = document.createElement('input');
             usernameInput.type = 'text';
             usernameInput.value = user.username;
-            usernameInput.className = user.baseRole;
+            usernameInput.className = getUserRole(user);
             usernameInput.addEventListener('change', (e) => {
                 const formattedUsername = formatUsername(e.target.value);
                 usernameInput.value = formattedUsername;
-                usersData[index].username = formattedUsername;
-
+                usersData[originalIndex].username = formattedUsername;
+            
                 const oldAutoDisplay = generateDisplayName(user.username);
                 if (user.displayName === oldAutoDisplay) {
-                    usersData[index].displayName = generateDisplayName(formattedUsername);
+                    usersData[originalIndex].displayName = generateDisplayName(formattedUsername);
                 }
-
+            
+                // Get base role from username prefix (for backward compatibility)
                 const newBaseRole = getUserRole(formattedUsername);
-                usersData[index].baseRole = newBaseRole;
-
-                // Update roles if it only had the base role before
-                if (user.roles.length === 1 && user.roles[0] === user.baseRole) {
-                    usersData[index].roles = [newBaseRole];
-                }
-
+                usersData[originalIndex].baseRole = newBaseRole;
+            
+                // No need to update roles array - we now rely on explicit roles
+                // rather than inferring from username prefix
+            
                 savePasswordFile().then(() => {
                     renderUserTable();
                 });
@@ -833,9 +876,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const displayNameInput = document.createElement('input');
             displayNameInput.type = 'text';
             displayNameInput.value = user.displayName;
-            displayNameInput.className = user.baseRole;
+            displayNameInput.className = getUserRole(user);
             displayNameInput.addEventListener('change', (e) => {
-                usersData[index].displayName = e.target.value;
+                usersData[originalIndex].displayName = e.target.value;
                 savePasswordFile();
             });
 
@@ -855,9 +898,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const passwordInput = document.createElement('input');
             passwordInput.type = 'text';
             passwordInput.value = user.password;
-            passwordInput.className = user.baseRole;
+            passwordInput.className = getUserRole(user);
             passwordInput.addEventListener('change', (e) => {
-                usersData[index].password = e.target.value;
+                usersData[originalIndex].password = e.target.value;
                 savePasswordFile();
             });
 
@@ -884,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
             editRolesButton.className = 'btn btn-small';
             editRolesButton.textContent = 'Edit Roles';
             editRolesButton.addEventListener('click', () => {
-                openRolesEditor(index);
+                openRolesEditor(originalIndex);
             });
             rolesCell.appendChild(editRolesButton);
             row.appendChild(rolesCell);
@@ -897,8 +940,8 @@ document.addEventListener('DOMContentLoaded', function() {
             moveUpButton.innerHTML = '&uarr;';
             moveUpButton.title = 'Move Up';
             moveUpButton.addEventListener('click', () => {
-                if (index > 0) {
-                    [usersData[index], usersData[index-1]] = [usersData[index-1], usersData[index]];
+                if (originalIndex > 0) {
+                    [usersData[originalIndex], usersData[originalIndex-1]] = [usersData[originalIndex-1], usersData[originalIndex]];
 
                     // Save changes and re-render
                     savePasswordFile().then(() => {
@@ -913,8 +956,8 @@ document.addEventListener('DOMContentLoaded', function() {
             moveDownButton.innerHTML = '&darr;';
             moveDownButton.title = 'Move Down';
             moveDownButton.addEventListener('click', () => {
-                if (index < usersData.length - 1) {
-                    [usersData[index], usersData[index+1]] = [usersData[index+1], usersData[index]];
+                if (originalIndex < usersData.length - 1) {
+                    [usersData[originalIndex], usersData[originalIndex+1]] = [usersData[originalIndex+1], usersData[originalIndex]];
 
                     // Save changes and re-render
                     savePasswordFile().then(() => {
@@ -929,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteButton.className = 'btn btn-small btn-delete';
             deleteButton.textContent = 'Delete';
             deleteButton.addEventListener('click', () => {
-                usersData.splice(index, 1);
+                usersData.splice(originalIndex, 1);
 
                 // Save changes and re-render
                 savePasswordFile().then(() => {
@@ -1040,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', function() {
             username,
             displayName,
             password,
-            roles: [baseRole],
+            roles: [baseRole.charAt(0).toUpperCase() + baseRole.slice(1)],
             baseRole
         });
 

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if user is logged in
     const isLoggedIn = sessionStorage.getItem('memberLoggedIn');
     const memberName = sessionStorage.getItem('memberName');
+    const scheduleFilePath = 'schedule.txt';
     
     // If not logged in, redirect to login page
     if (!isLoggedIn || isLoggedIn !== 'true') {
@@ -59,11 +60,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Now fetch user data
                 await fetchUserData();
+                
+                // Also fetch schedule data
+                await fetchScheduleData();
             } else {
                 throw new Error('No GitHub token found');
             }
         } catch (error) {
-            console.error('Error refreshing user data:', error);
+            console.error('Error refreshing data:', error);
+        }
+    }
+
+    async function fetchScheduleData() {
+        try {
+            const scheduleUrl = `https://api.github.com/repos/${githubUser}/${githubRepo}/contents/${scheduleFilePath}`;
+            
+            const response = await fetch(scheduleUrl, {
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                cache: 'no-store' // Prevent caching
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch schedule data');
+            }
+            
+            const data = await response.json();
+            const scheduleData = atob(data.content);
+            
+            // Parse and display the schedule
+            parseAndDisplaySchedule(scheduleData);
+        } catch (error) {
+            console.error('Error fetching schedule data:', error);
+        }
+    }
+
+    function parseAndDisplaySchedule(scheduleData) {
+        try {
+            // Parse the schedule entries
+            // Format: day|time|location|description,
+            const entries = scheduleData.split(',').map(entry => entry.trim()).filter(entry => entry !== '');
+            const scheduleEntries = [];
+            
+            entries.forEach(entry => {
+                const parts = entry.split('|');
+                if (parts.length >= 4) {
+                    scheduleEntries.push({
+                        day: parts[0].trim(),
+                        time: parts[1].trim(),
+                        location: parts[2].trim(),
+                        description: parts[3].trim()
+                    });
+                }
+            });
+            
+            console.log('Parsed schedule entries:', scheduleEntries);
+            
+            // Display the schedule
+            displaySchedule(scheduleEntries);
+        } catch (error) {
+            console.error('Error parsing schedule data:', error);
         }
     }
     
@@ -110,9 +168,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (parts.length >= 2 && parts[0].trim() === username) {
                 // Found the user, update roles
                 if (parts.length >= 4) {
-                    // Format: username|displayName|password|role1-role2-role3
+                    // Format: username|displayName|password|role1-role2-role3 or role1,role2,role3
                     const rolesString = parts[3].trim();
-                    const roles = rolesString.split('-').map(role => role.trim());
+                    // Support both hyphen and comma as separators
+                    const roles = rolesString.split(/[-,]/).map(role => role.trim()).filter(role => role);
+                    
+                    console.log('Loaded roles for user:', roles);
                     
                     // Update roles in session storage
                     sessionStorage.setItem('memberRoles', JSON.stringify(roles));
@@ -145,49 +206,76 @@ document.addEventListener('DOMContentLoaded', function() {
             if (rolesString) {
                 memberRoles = JSON.parse(rolesString);
             } else {
-                memberRoles = ['member']; // Default role
+                memberRoles = []; // No default role
             }
         } catch (error) {
             console.error('Error parsing roles:', error);
-            memberRoles = ['member']; // Default to member if there's an error
+            memberRoles = []; // Empty array if there's an error
         }
         return memberRoles;
     }
     
     // Helper function to check if user has a specific role
     function hasRole(role) {
+        if (!role) return false;
+        
         const memberRoles = getUserRoles();
-        return memberRoles.includes(role);
+        // Case-insensitive role checking
+        return memberRoles.some(userRole => 
+            userRole.toLowerCase() === role.toLowerCase());
     }
     
     // Apply roles to the UI elements
     function applyRolesToUI() {
         const memberRoles = getUserRoles();
         
-        // Conditionally show/hide elements based on roles
-        const adminElements = document.querySelectorAll('[data-role="admin"]');
-        const moderatorElements = document.querySelectorAll('[data-role="moderator"]');
+        console.log('Current user roles:', memberRoles);
         
-        // Show/hide admin elements
-        if (adminElements.length > 0) {
-            const isAdmin = hasRole('admin');
-            adminElements.forEach(element => {
-                element.style.display = isAdmin ? 'block' : 'none';
-            });
-        }
+        // Get all elements with data-role attributes
+        const roleElements = document.querySelectorAll('[data-role]');
         
-        // Show/hide moderator elements
-        if (moderatorElements.length > 0) {
-            const isModerator = hasRole('moderator') || hasRole('admin'); // Admins can see moderator content
-            moderatorElements.forEach(element => {
-                element.style.display = isModerator ? 'block' : 'none';
-            });
-        }
+        // Process each element with a data-role attribute
+        roleElements.forEach(element => {
+            const requiredRole = element.getAttribute('data-role');
+            const defaultDisplay = getDefaultDisplay(element);
+            
+            // Only show element if user has the exact required role
+            const hasRequiredRole = hasRole(requiredRole);
+            
+            // Log for debugging
+            console.log(`Element with data-role="${requiredRole}": User ${hasRequiredRole ? 'has' : 'does not have'} this role`);
+            
+            element.style.display = hasRequiredRole ? defaultDisplay : 'none';
+        });
         
         // Display roles if there's a roles display element
         const rolesDisplay = document.getElementById('memberRolesDisplay');
         if (rolesDisplay) {
             rolesDisplay.textContent = memberRoles.join(', ');
+        }
+    }
+    
+    // Helper function to determine the default display type of an element
+    function getDefaultDisplay(element) {
+        // Get the tag name to determine the default display type
+        const tagName = element.tagName.toLowerCase();
+        
+        // Default display types for common elements
+        if (['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'section', 'article', 'header', 'footer', 'nav'].includes(tagName)) {
+            return 'block';
+        } else if (['span', 'a', 'strong', 'em', 'b', 'i', 'button', 'input', 'label'].includes(tagName)) {
+            return 'inline-block';
+        } else if (['li'].includes(tagName)) {
+            return 'list-item';
+        } else if (['table'].includes(tagName)) {
+            return 'table';
+        } else if (['tr'].includes(tagName)) {
+            return 'table-row';
+        } else if (['td', 'th'].includes(tagName)) {
+            return 'table-cell';
+        } else {
+            // Default to block for unknown elements
+            return 'block';
         }
     }
     
@@ -303,6 +391,96 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Enhanced schedule display with horizontal layout and current day in the middle
+    function displaySchedule(scheduleEntries) {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const today = new Date();
+        const currentDayIndex = today.getDay();
+        
+        // Get the schedule container
+        const scheduleContainer = document.querySelector('.schedule-container');
+        if (!scheduleContainer) return;
+        
+        // Clear existing content
+        scheduleContainer.innerHTML = '';
+        
+        // Create a new horizontal schedule layout
+        const horizontalLayout = document.createElement('div');
+        horizontalLayout.className = 'schedule-horizontal-layout';
+        
+        // Create day elements with a loop, 3 days before and 3 days after current day
+        for (let offset = -3; offset <= 3; offset++) {
+            // Calculate the day index with wraparound
+            let dayIndex = (currentDayIndex + offset) % 7;
+            if (dayIndex < 0) dayIndex += 7;
+            
+            const dayName = days[dayIndex];
+            
+            // Calculate date for this day
+            const dayDate = new Date(today);
+            dayDate.setDate(today.getDate() + offset);
+            const dayMonth = dayDate.getMonth() + 1;
+            const dayDateNum = dayDate.getDate();
+            const dayFormatted = `${dayMonth}/${dayDateNum}`;
+            
+            // Find schedule entry for this day - check both numeric date and day name
+            const scheduleForDay = scheduleEntries.filter(entry => 
+                entry.day === dayFormatted || // Matches exact date (e.g., "4/12")
+                entry.day === dayName         // Matches day name (e.g., "Saturday")
+            );
+            
+            // Create the day element
+            const dayElement = document.createElement('div');
+            dayElement.className = 'schedule-day';
+            
+            // Add additional class for current day
+            if (offset === 0) {
+                dayElement.classList.add('current-day');
+            }
+            
+            // Default values - explicitly saying "No Meeting on this day"
+            let scheduleTime = 'No Meeting Today';
+            let scheduleLocation = 'N/A';
+            let scheduleDescription = 'N/A';
+            
+            // Override with actual schedule if found
+            if (scheduleForDay.length > 0) {
+                scheduleTime = scheduleForDay[0].time;
+                scheduleLocation = scheduleForDay[0].location;
+                scheduleDescription = scheduleForDay[0].description;
+            }
+            
+            // Create the content for this day
+            dayElement.innerHTML = `
+                <div class="day-header">
+                    <span class="day-name">${dayName}</span>
+                    <span class="day-date">${dayFormatted}</span>
+                </div>
+                <div class="day-details">
+                    <div class="schedule-detail">
+                        <span class="detail-label">Time:</span>
+                        <span class="detail-value">${scheduleTime}</span>
+                    </div>
+                    <div class="schedule-detail">
+                        <span class="detail-label">Location:</span>
+                        <span class="detail-value">${scheduleLocation}</span>
+                    </div>
+                    <div class="schedule-detail">
+                        <span class="detail-label">Plan:</span>
+                        <span class="detail-value">${scheduleDescription}</span>
+                    </div>
+                </div>
+            `;
+            
+            horizontalLayout.appendChild(dayElement);
+        }
+        
+        scheduleContainer.appendChild(horizontalLayout);
+    }
+    
+    // Call this instead of highlightCurrentDay()
+    enhanceScheduleDisplay();
+
     // Add team specific alerts if needed
     const showTeamAlerts = sessionStorage.getItem('showTeamAlerts');
     
@@ -338,24 +516,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 10000);
     }
-    
-    // Highlight current day in schedule
-    const highlightCurrentDay = () => {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const today = days[new Date().getDay()];
-        
-        const scheduleItems = document.querySelectorAll('.schedule-item');
-        
-        scheduleItems.forEach((item, index) => {
-            if (index % 4 === 0 && item.textContent === today) {
-                // Highlight the row (4 cells for this day)
-                for (let i = 0; i < 4; i++) {
-                    scheduleItems[index + i].style.backgroundColor = '#1a4b6d';
-                    scheduleItems[index + i].style.fontWeight = 'bold';
-                }
-            }
-        });
-    };
-    
-    highlightCurrentDay();
 });

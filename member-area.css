@@ -52,7 +52,7 @@ header {
 }
 
 .logo-img {
-    width: 50px;
+    width: auto;
     height: 50px;
     margin-right: 15px;
 }
@@ -229,36 +229,94 @@ section:nth-child(even) {
     margin-bottom: 5px;
 }
 
-/* Schedule Section */
+/* Schedule Section - Updated for horizontal layout */
 .schedule-container {
+    width: 100%;
+    overflow-x: auto;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.schedule-horizontal-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.schedule-day {
+    flex: 0 0 230px;
     background-color: #103a5a;
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 180px;
 }
 
-.schedule-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr 1.5fr 2fr;
+.schedule-day.current-day {
+    flex: 0 0 260px;
+    background-color: #1a4b6d;
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    z-index: 5;
+    border-top: 4px solid #e6c060;
 }
 
-.schedule-header {
-    background-color: #0d314e;
-    padding: 15px;
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.day-name {
     font-weight: bold;
+    font-size: 1.2em;
+    color: #5c9bd6;
+}
+
+.day-date {
     color: #e6c060;
-    text-align: center;
-    border-right: 1px solid #103a5a;
+    font-weight: bold;
 }
 
-.schedule-item {
-    padding: 15px;
-    border-bottom: 1px solid #0d314e;
-    border-right: 1px solid #0d314e;
-    text-align: center;
+.day-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-/* Tasks Section */
+.schedule-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-label {
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.7);
+    margin-right: 10px;
+}
+
+.detail-value {
+    color: #f0f5f9;
+    text-align: right;
+    flex: 1;
+}
+
+.schedule-scroll-wrapper {
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+ }
+
+/* Task filters and items */
 .task-filters {
     display: flex;
     justify-content: center;
@@ -471,6 +529,25 @@ footer {
     cursor: pointer;
 }
 
+.admin-button {
+    display: inline-block;
+    background-color: #e6c060;
+    color: #0a2638;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-decoration: none;
+    margin-top: 15px;
+    transition: all 0.2s;
+}
+
+.admin-button:hover {
+    background-color: #d9b04c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;
@@ -491,12 +568,23 @@ footer {
         margin: 3px;
     }
     
-    .schedule-grid {
-        grid-template-columns: 1fr;
+    .schedule-horizontal-layout {
+        justify-content: flex-start;
+        width: max-content;
+        min-width: 100%;
+        padding: 10px 20px;
     }
     
-    .schedule-header, .schedule-item {
-        border-right: none;
+    .schedule-day {
+        flex: 0 0 200px;
+    }
+    
+    .schedule-day.current-day {
+        flex: 0 0 220px;
+    }
+    
+    .schedule-scroll-wrapper {
+        touch-action: pan-x;
     }
     
     .task-header {
