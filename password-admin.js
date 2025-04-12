@@ -5,13 +5,10 @@ document.addEventListener('DOMContentLoaded', function() {
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
-        // Updated token with read/write permissions
-        githubToken: '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',
-        // Default password for new users
+        githubToken: '',
         defaultPassword: '1234'
     };
     
-    // DOM Elements
     const adminLoginForm = document.getElementById('adminLoginForm');
     const passwordManagement = document.getElementById('passwordManagement');
     const adminPassword = document.getElementById('adminPassword');
@@ -25,49 +22,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const addUserButton = document.getElementById('addUserButton');
     const logoutButton = document.getElementById('logoutButton') || createLogoutButton();
     
-    // Remove the saveChangesButton from DOM if it exists
     const saveChangesButton = document.getElementById('saveChangesButton');
     if (saveChangesButton) {
         saveChangesButton.remove();
     }
     
-    // Create notification container
     const notificationContainer = document.createElement('div');
     notificationContainer.id = 'notificationContainer';
     document.body.appendChild(notificationContainer);
     
-    // Add notification styles
     addNotificationStyles();
     
-    // Add user row styles
     addUserRowStyles();
     
-    // Update password field placeholder to show default
     if (newPassword) {
         newPassword.placeholder = `Default: ${config.defaultPassword}`;
     }
     
-    // GitHub API endpoints
     const githubApiBase = 'https://api.github.com';
     const repoContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.passwordFilePath}`;
     const adminPasswordUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.adminPasswordFilePath}`;
     
-    // Store current file SHA (needed for updates)
     let currentFileSha = '';
     
-    // Store users data
     let usersData = [];
     
-    // Store admin password
     let adminPasswordFromRepo = '';
     
-    // Flag to prevent multiple simultaneous saves
     let isSaving = false;
     
-    // Flag to track if editor is in focus
     let isEditorFocused = false;
     
-    // Create logout button if it doesn't exist
     function createLogoutButton() {
         const button = document.createElement('button');
         button.id = 'logoutButton';
@@ -75,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
         button.textContent = 'Logout';
         button.style.marginLeft = '10px';
         
-        // Find a good place to insert the button
         const buttonContainer = document.querySelector('.button-container') || 
                                document.querySelector('.controls') || 
                                document.querySelector('.form-actions');
@@ -83,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (buttonContainer) {
             buttonContainer.appendChild(button);
         } else {
-            // If no container is found, create one
             const container = document.createElement('div');
             container.className = 'form-actions button-container';
             container.appendChild(button);
@@ -93,7 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return button;
     }
     
-    // Add notification styling
     function addNotificationStyles() {
         if (document.getElementById('notification-styles')) return;
         
@@ -159,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(styleTag);
     }
     
-    // Add user row styles
     function addUserRowStyles() {
         if (document.getElementById('user-row-styles')) return;
         
@@ -244,14 +225,12 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         document.head.appendChild(styleTag);
         
-        // Create saving indicator element
         const savingIndicator = document.createElement('div');
         savingIndicator.className = 'saving-indicator';
         savingIndicator.id = 'savingIndicator';
         savingIndicator.textContent = 'Saving changes...';
         document.body.appendChild(savingIndicator);
         
-        // Create keyboard shortcut indicator
         const shortcutIndicator = document.createElement('div');
         shortcutIndicator.className = 'keyboard-shortcut-indicator';
         shortcutIndicator.id = 'shortcutIndicator';
@@ -259,20 +238,17 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(shortcutIndicator);
     }
     
-    // Show notification
     function showNotification(message, isError = false) {
         const notification = document.createElement('div');
         notification.className = `notification ${isError ? 'error' : 'success'}`;
         notification.textContent = message;
         
-        // Add progress bar
         const progress = document.createElement('div');
         progress.className = 'notification-progress';
         notification.appendChild(progress);
         
         notificationContainer.appendChild(notification);
         
-        // Remove the notification after 5 seconds
         setTimeout(() => {
             notification.style.animation = 'slideOut 0.3s ease-out forwards';
             setTimeout(() => {
@@ -281,19 +257,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Display saving indicator
     function showSavingIndicator() {
         const indicator = document.getElementById('savingIndicator');
         indicator.style.display = 'block';
     }
     
-    // Hide saving indicator
     function hideSavingIndicator() {
         const indicator = document.getElementById('savingIndicator');
         indicator.style.display = 'none';
     }
     
-    // Determine user role based on username
     function getUserRole(username) {
         if (username.startsWith('admin_')) {
             return 'admin';
@@ -306,20 +279,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Always require login - removed session persistence
     function initializePage() {
-        // Always start with login screen
         adminLoginForm.style.display = 'block';
         passwordManagement.style.display = 'none';
         
-        // Clear any previous session
         sessionStorage.removeItem('adminLoggedIn');
         
-        // Fetch admin password from repository
         fetchAdminPassword();
     }
     
-    // Fetch admin password from GitHub
     async function fetchAdminPassword() {
         try {
             const response = await fetch(adminPasswordUrl, {
@@ -337,10 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const data = await response.json();
             
-            // Decode content from Base64
             adminPasswordFromRepo = atob(data.content).trim();
             
-            // Enable login button now that admin password is loaded
             adminLoginButton.disabled = false;
             
         } catch (error) {
@@ -350,13 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Show the password management interface
     function showPasswordManagement() {
         adminLoginForm.style.display = 'none';
         passwordManagement.style.display = 'block';
     }
     
-    // Fetch the password file from GitHub
     async function fetchPasswordFile() {
         loadingIndicator.style.display = 'block';
         passwordContent.style.display = 'none';
