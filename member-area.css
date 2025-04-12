@@ -467,6 +467,10 @@ footer {
     font-size: 14px;
 }
 
+#settingsButton {
+    cursor: pointer;
+}
+
 @media (max-width: 768px) {
     .header-content {
         flex-direction: column;

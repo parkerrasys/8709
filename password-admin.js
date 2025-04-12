@@ -1,13 +1,15 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Configuration - Replace with your actual GitHub details
     const config = {
         githubUser: 'parkerrasys',
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
-        githubToken: '',
         defaultPassword: '1234'
     };
+
+    const API_KEY = 'AIzaSyC-CRiUBM4ZNQXU_nTjRNjX_YcbRG95TsE';
+    const SPREADSHEET_ID = '1MZ6T17q-IcUI2AnZ1nVXtlfyMOHxLl_kTUb5YEI_uLg';
+    const CELL_RANGE = 'A2:A2';
     
     const adminLoginForm = document.getElementById('adminLoginForm');
     const passwordManagement = document.getElementById('passwordManagement');
@@ -52,6 +54,36 @@ document.addEventListener('DOMContentLoaded', function() {
     let isSaving = false;
     
     let isEditorFocused = false;
+
+    let githubToken = '';
+
+    async function fetchGithubToken() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CELL_RANGE}?key=${API_KEY}`;
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Failed to fetch GitHub token from Google Sheets');
+            }
+
+            const data = await response.json();
+
+            if (data.values && data.values.length > 0 && data.values[0].length > 0) {
+                githubToken = data.values[0][0];
+                console.log('GitHub token fetched successfully');
+
+                // Now that we have the token, we can proceed with initialization
+                adminLoginButton.disabled = false;
+                fetchAdminPassword();
+            } else {
+                throw new Error('No GitHub token found in Google Sheets cell A1');
+            }
+        } catch (error) {
+            console.error('Error fetching GitHub token:', error);
+            adminLoginError.textContent = 'Unable to connect to authentication service. Please try again later.';
+            adminLoginButton.disabled = true;
+        }
+    }
     
     function createLogoutButton() {
         const button = document.createElement('button');
@@ -74,6 +106,305 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return button;
+    }
+
+    // Add modal for roles editor
+    function addRolesEditorModal() {
+        if (document.getElementById('rolesEditorModal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'rolesEditorModal';
+        modal.className = 'modal';
+        modal.style.display = 'none';
+
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>Edit User Roles</h3>
+                <div id="currentRolesList" class="current-roles-list"></div>
+                <div class="add-role-form">
+                    <input type="text" id="newRoleInput" placeholder="Enter new role..." />
+                    <button id="addRoleButton" class="btn">Add Role</button>
+                </div>
+                <div class="preset-roles">
+                    <h4>Common Roles:</h4>
+                    <div class="preset-buttons">
+                        <button class="preset-role" data-role="Member">Member</button>
+                        <button class="preset-role" data-role="Mentor">Mentor</button>
+                        <button class="preset-role" data-role="Team Lead">Team Lead</button>
+                        <button class="preset-role" data-role="Admin">Admin</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="closeRolesButton" class="btn">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add modal styles
+        const styleTag = document.createElement('style');
+        styleTag.id = 'roles-modal-styles';
+        styleTag.textContent = `
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 10000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0,0,0,0.5);
+            }
+
+            .modal-content {
+                background-color: #103a5a;
+                margin: 10% auto;
+                padding: 20px;
+                border: 1px solid #1d5280;
+                border-radius: 5px;
+                width: 80%;
+                max-width: 600px;
+                color: #ffffff;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            }
+
+            .close-modal {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+
+            .close-modal:hover,
+            .close-modal:focus {
+                color: #fff;
+                text-decoration: none;
+                cursor: pointer;
+            }
+
+            .current-roles-list {
+                margin: 15px 0;
+                padding: 10px;
+                background-color: #0d314e;
+                border-radius: 5px;
+                min-height: 40px;
+            }
+
+            .role-tag {
+                display: inline-block;
+                background-color: #1d5280;
+                color: white;
+                padding: 5px 10px;
+                margin: 5px;
+                border-radius: 3px;
+                position: relative;
+            }
+
+            .role-delete {
+                margin-left: 8px;
+                color: rgba(255,255,255,0.7);
+                cursor: pointer;
+            }
+
+            .role-delete:hover {
+                color: #ff8a80;
+            }
+
+            .add-role-form {
+                display: flex;
+                margin: 15px 0;
+                gap: 10px;
+            }
+
+            .add-role-form input {
+                flex: 1;
+                padding: 8px;
+                background-color: #0d314e;
+                border: 1px solid #1d5280;
+                color: white;
+                border-radius: 3px;
+            }
+
+            .preset-roles {
+                margin: 15px 0;
+            }
+
+            .preset-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                margin-top: 10px;
+            }
+
+            .preset-role {
+                background-color: #1d5280;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+                cursor: pointer;
+            }
+
+            .preset-role:hover {
+                background-color: #2d6290;
+            }
+
+            .modal-footer {
+                margin-top: 20px;
+                text-align: right;
+            }
+
+            /* Style for role in table */
+            .roles-display {
+                margin-bottom: 8px;
+                font-size: 0.9em;
+                color: #5c9bd6;
+            }
+        `;
+        document.head.appendChild(styleTag);
+
+        // Set up event listeners for modal
+        const closeBtn = modal.querySelector('.close-modal');
+        closeBtn.addEventListener('click', closeRolesEditor);
+
+        const closeRolesBtn = document.getElementById('closeRolesButton');
+        closeRolesBtn.addEventListener('click', closeRolesEditor);
+
+        const addRoleBtn = document.getElementById('addRoleButton');
+        addRoleBtn.addEventListener('click', addNewRole);
+
+        const newRoleInput = document.getElementById('newRoleInput');
+        newRoleInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addNewRole();
+            }
+        });
+
+        // Set up preset role buttons
+        const presetButtons = modal.querySelectorAll('.preset-role');
+        presetButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const role = button.getAttribute('data-role');
+                addRoleToEditor(role);
+            });
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeRolesEditor();
+            }
+        });
+    }
+
+    // Current user index for the roles editor
+    let currentEditingUserIndex = -1;
+    let currentRoles = [];
+
+    // Open the roles editor for a specific user
+    function openRolesEditor(userIndex) {
+        currentEditingUserIndex = userIndex;
+        currentRoles = [...usersData[userIndex].roles];
+
+        const modal = document.getElementById('rolesEditorModal');
+        if (!modal) {
+            addRolesEditorModal();
+        }
+
+        // Update modal title to include user's name
+        const userName = usersData[userIndex].displayName;
+        const modalTitle = modal.querySelector('h3');
+        modalTitle.innerHTML = `Edit User Roles - <span style="color: #FFD700;">${userName}</span>`;
+
+        // Update current roles list
+        renderCurrentRoles();
+
+        // Show the modal
+        document.getElementById('rolesEditorModal').style.display = 'block';
+    }
+
+    // Close the roles editor without saving
+    function closeRolesEditor() {
+        document.getElementById('rolesEditorModal').style.display = 'none';
+        currentEditingUserIndex = -1;
+        currentRoles = [];
+    }
+
+    // Render the current roles in the editor
+    function renderCurrentRoles() {
+        const rolesList = document.getElementById('currentRolesList');
+        rolesList.innerHTML = '';
+
+        if (currentRoles.length === 0) {
+            rolesList.innerHTML = '<em>No roles assigned</em>';
+            return;
+        }
+
+        currentRoles.forEach((role, index) => {
+            const roleTag = document.createElement('div');
+            roleTag.className = 'role-tag';
+
+            const roleText = document.createTextNode(role);
+            roleTag.appendChild(roleText);
+
+            const deleteBtn = document.createElement('span');
+            deleteBtn.className = 'role-delete';
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.addEventListener('click', () => {
+                deleteRole(index);
+            });
+
+            roleTag.appendChild(deleteBtn);
+            rolesList.appendChild(roleTag);
+        });
+    }
+
+    // Delete a role from the current roles
+    function deleteRole(index) {
+        currentRoles.splice(index, 1);
+        renderCurrentRoles();
+        
+        // Save changes automatically
+        saveRoleChangesToUser();
+    }
+    
+    // Add a new role to the current roles
+    function addNewRole() {
+        const input = document.getElementById('newRoleInput');
+        const role = input.value.trim();
+        
+        if (role) {
+            addRoleToEditor(role);
+            input.value = '';
+        }
+    }
+    
+    // Add a role to the editor (used by both manual add and presets)
+    function addRoleToEditor(role) {
+        if (role && !currentRoles.includes(role)) {
+            currentRoles.push(role);
+            renderCurrentRoles();
+            
+            // Save changes automatically
+            saveRoleChangesToUser();
+        }
+    }
+    
+    // Save the roles changes to the user data
+    function saveRoleChangesToUser() {
+        if (currentEditingUserIndex >= 0) {
+            usersData[currentEditingUserIndex].roles = currentRoles;
+            
+            // Save to file
+            savePasswordFile().then(() => {
+                renderUserTable();
+                showNotification('User roles updated and saved successfully!');
+            });
+        }
     }
     
     function addNotificationStyles() {
@@ -282,17 +613,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializePage() {
         adminLoginForm.style.display = 'block';
         passwordManagement.style.display = 'none';
-        
+
         sessionStorage.removeItem('adminLoggedIn');
-        
-        fetchAdminPassword();
+
+        adminLoginButton.disabled = true;
+        fetchGithubToken();
+        addRolesEditorModal();
     }
     
     async function fetchAdminPassword() {
         try {
             const response = await fetch(adminPasswordUrl, {
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -329,7 +662,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Fetching password file from:', repoContentsUrl);
             const response = await fetch(repoContentsUrl, {
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
@@ -343,7 +676,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             currentFileSha = data.sha;
             
-            // Decode content from Base64
             const content = atob(data.content);
             parseUserData(content);
             
@@ -357,54 +689,70 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Parse user data from file content with the new format: username|displayname|password
+    // Parse user data from file content with the updated format: username|displayname|password|roles
     function parseUserData(content) {
         usersData = [];
-        
+
         // Split by lines first, then process each line
         const lines = content.split('\n').filter(line => line.trim() !== '');
-        
+
         lines.forEach(line => {
             // Remove trailing comma if exists
             const cleanLine = line.trim().endsWith(',') 
                 ? line.trim().substring(0, line.trim().length - 1) 
                 : line.trim();
-                
+
             // Extract user parts from each line
             const parts = cleanLine.split('|');
-            
-            if (parts.length === 3) {
-                // New format: username|displayname|password
+
+            if (parts.length === 4) {
+                // New format with roles: username|displayname|password|roles
                 const username = parts[0].trim();
                 const displayName = parts[1].trim();
                 const password = parts[2].trim();
-                
+                const roles = parts[3].trim().split('-');
+
                 usersData.push({
                     username,
                     displayName,
                     password,
-                    role: getUserRole(username)
+                    roles: roles,
+                    baseRole: getUserRole(username)
+                });
+            } else if (parts.length === 3) {
+                // Previous format: username|displayname|password
+                const username = parts[0].trim();
+                const displayName = parts[1].trim();
+                const password = parts[2].trim();
+
+                usersData.push({
+                    username,
+                    displayName,
+                    password,
+                    roles: [getUserRole(username)],
+                    baseRole: getUserRole(username)
                 });
             } else if (parts.length === 2) {
                 // Handle old format for backwards compatibility: username|password
                 const username = parts[0].trim();
                 const password = parts[1].trim();
-                
-                // Convert username format to display name (e.g., "parker_rasys" to "Parker Rasys")
+
+                // Convert username format to display name
                 const displayName = username
                     .split('_')
                     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
                     .join(' ');
-                
+
                 usersData.push({
                     username,
                     displayName,
                     password,
-                    role: getUserRole(username)
+                    roles: [getUserRole(username)],
+                    baseRole: getUserRole(username)
                 });
             }
         });
-        
+
         renderUserTable();
     }
     
@@ -421,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .join(' ');
     }
     
-    // Debounce function to prevent multiple rapid saves
+    // Function to prevent multiple rapid saves
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -433,39 +781,42 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Render the user table with current data
     function renderUserTable() {
-        // Clear existing rows
         userTableBody.innerHTML = '';
-        
+
         usersData.forEach((user, index) => {
             const row = document.createElement('tr');
             row.className = 'user-row';
             row.setAttribute('data-index', index);
-            
+
             // Username cell
             const usernameCell = document.createElement('td');
             const usernameInput = document.createElement('input');
             usernameInput.type = 'text';
             usernameInput.value = user.username;
-            usernameInput.className = user.role;
+            usernameInput.className = user.baseRole;
             usernameInput.addEventListener('change', (e) => {
                 const formattedUsername = formatUsername(e.target.value);
                 usernameInput.value = formattedUsername;
                 usersData[index].username = formattedUsername;
-                
-                // Update display name if it matches the auto-generated format
+
                 const oldAutoDisplay = generateDisplayName(user.username);
                 if (user.displayName === oldAutoDisplay) {
                     usersData[index].displayName = generateDisplayName(formattedUsername);
                 }
-                
-                usersData[index].role = getUserRole(formattedUsername);
-                
-                // Re-render the table to update the display name and role styling
+
+                const newBaseRole = getUserRole(formattedUsername);
+                usersData[index].baseRole = newBaseRole;
+
+                // Update roles if it only had the base role before
+                if (user.roles.length === 1 && user.roles[0] === user.baseRole) {
+                    usersData[index].roles = [newBaseRole];
+                }
+
                 savePasswordFile().then(() => {
                     renderUserTable();
                 });
             });
-            
+
             // Add focus/blur event listeners to track editor state
             usernameInput.addEventListener('focus', () => {
                 isEditorFocused = true;
@@ -473,21 +824,21 @@ document.addEventListener('DOMContentLoaded', function() {
             usernameInput.addEventListener('blur', () => {
                 isEditorFocused = false;
             });
-            
+
             usernameCell.appendChild(usernameInput);
             row.appendChild(usernameCell);
-            
+
             // Display name cell - now editable
             const displayNameCell = document.createElement('td');
             const displayNameInput = document.createElement('input');
             displayNameInput.type = 'text';
             displayNameInput.value = user.displayName;
-            displayNameInput.className = user.role;
+            displayNameInput.className = user.baseRole;
             displayNameInput.addEventListener('change', (e) => {
                 usersData[index].displayName = e.target.value;
                 savePasswordFile();
             });
-            
+
             // Add focus/blur event listeners to track editor state
             displayNameInput.addEventListener('focus', () => {
                 isEditorFocused = true;
@@ -495,21 +846,21 @@ document.addEventListener('DOMContentLoaded', function() {
             displayNameInput.addEventListener('blur', () => {
                 isEditorFocused = false;
             });
-            
+
             displayNameCell.appendChild(displayNameInput);
             row.appendChild(displayNameCell);
-            
+
             // Password cell
             const passwordCell = document.createElement('td');
             const passwordInput = document.createElement('input');
             passwordInput.type = 'text';
             passwordInput.value = user.password;
-            passwordInput.className = user.role;
+            passwordInput.className = user.baseRole;
             passwordInput.addEventListener('change', (e) => {
                 usersData[index].password = e.target.value;
                 savePasswordFile();
             });
-            
+
             // Add focus/blur event listeners to track editor state
             passwordInput.addEventListener('focus', () => {
                 isEditorFocused = true;
@@ -517,24 +868,38 @@ document.addEventListener('DOMContentLoaded', function() {
             passwordInput.addEventListener('blur', () => {
                 isEditorFocused = false;
             });
-            
+
             passwordCell.appendChild(passwordInput);
             row.appendChild(passwordCell);
-            
-            // Actions cell
+
+            // Roles cell
+            const rolesCell = document.createElement('td');
+            const rolesDisplay = document.createElement('div');
+            rolesDisplay.className = 'roles-display';
+            rolesDisplay.textContent = user.roles.join(', ');
+            rolesCell.appendChild(rolesDisplay);
+
+            // Edit roles button
+            const editRolesButton = document.createElement('button');
+            editRolesButton.className = 'btn btn-small';
+            editRolesButton.textContent = 'Edit Roles';
+            editRolesButton.addEventListener('click', () => {
+                openRolesEditor(index);
+            });
+            rolesCell.appendChild(editRolesButton);
+            row.appendChild(rolesCell);
+
             const actionsCell = document.createElement('td');
             actionsCell.className = 'actions-cell';
-            
-            // Reorder buttons
+
             const moveUpButton = document.createElement('button');
             moveUpButton.className = 'btn btn-small';
             moveUpButton.innerHTML = '&uarr;';
             moveUpButton.title = 'Move Up';
             moveUpButton.addEventListener('click', () => {
                 if (index > 0) {
-                    // Swap with previous item
                     [usersData[index], usersData[index-1]] = [usersData[index-1], usersData[index]];
-                    
+
                     // Save changes and re-render
                     savePasswordFile().then(() => {
                         renderUserTable();
@@ -542,16 +907,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             });
-            
+
             const moveDownButton = document.createElement('button');
             moveDownButton.className = 'btn btn-small';
             moveDownButton.innerHTML = '&darr;';
             moveDownButton.title = 'Move Down';
             moveDownButton.addEventListener('click', () => {
                 if (index < usersData.length - 1) {
-                    // Swap with next item
                     [usersData[index], usersData[index+1]] = [usersData[index+1], usersData[index]];
-                    
+
                     // Save changes and re-render
                     savePasswordFile().then(() => {
                         renderUserTable();
@@ -559,51 +923,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
             });
-            
+
             // Delete button
             const deleteButton = document.createElement('button');
             deleteButton.className = 'btn btn-small btn-delete';
             deleteButton.textContent = 'Delete';
             deleteButton.addEventListener('click', () => {
                 usersData.splice(index, 1);
-                
+
                 // Save changes and re-render
                 savePasswordFile().then(() => {
                     renderUserTable();
                     showNotification('User deleted and saved.');
                 });
             });
-            
+
             // Add buttons to actions cell
             actionsCell.appendChild(moveUpButton);
             actionsCell.appendChild(moveDownButton);
             actionsCell.appendChild(deleteButton);
             row.appendChild(actionsCell);
-            
+
             userTableBody.appendChild(row);
         });
     }
     
-    // Generate file content from users data with the new format: username|displayname|password
+    // Generate file content from users data with the updated format: username|displayname|password|roles
     function generateFileContent() {
         let content = '';
-        
-        // Format with one entry per line, each ending with a comma except the last one
+
         if (usersData.length > 0) {
             usersData.forEach((user, index) => {
-                content += `${user.username}|${user.displayName}|${user.password}`;
+                const rolesString = user.roles.join('-');
+                content += `${user.username}|${user.displayName}|${user.password}|${rolesString}`;
                 if (index < usersData.length - 1) {
                     content += ',\n';
                 }
             });
         }
-        
+
         return content;
     }
     
     // Save the password file to GitHub
     async function savePasswordFile() {
-        // Don't save if already saving
         if (isSaving) return Promise.resolve();
         
         isSaving = true;
@@ -618,7 +981,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(repoContentsUrl, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `token ${config.githubToken}`,
+                    'Authorization': `token ${githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
@@ -656,39 +1019,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const username = formatUsername(newUsername.value.trim());
         // Use entered password or default if empty
         const password = newPassword.value.trim() || config.defaultPassword;
-        
+
         if (!username) {
             showNotification('Username is required', true);
             return;
         }
-        
+
         // Check if username already exists
         if (usersData.some(user => user.username === username)) {
             showNotification('This username already exists', true);
             return;
         }
-        
+
         // Generate display name from username
         const displayName = generateDisplayName(username);
-        const role = getUserRole(username);
-        
+        const baseRole = getUserRole(username);
+
         // Add the new user with the new format
         usersData.push({
             username,
             displayName,
             password,
-            role
+            roles: [baseRole],
+            baseRole
         });
-        
+
         // Save the new user data
         savePasswordFile().then(() => {
-            // Reset form fields
             newUsername.value = '';
             newPassword.value = '';
-            
-            // Update the table
             renderUserTable();
-            
+
             showNotification(`User added with ${password === config.defaultPassword ? 'default' : 'custom'} password and saved successfully!`);
         });
     }
@@ -707,30 +1068,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Admin logout
     function adminLogout() {
-        // Clear any login state
         sessionStorage.removeItem('adminLoggedIn');
-        // Reset back to login screen
         adminLoginForm.style.display = 'block';
         passwordManagement.style.display = 'none';
-        // Clear password field for security
         adminPassword.value = '';
     }
     
     // Handle Ctrl+S keyboard shortcut
     function handleKeyboardShortcut(event) {
-        // Check if Ctrl+S was pressed (metaKey for Mac)
         if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-            // Prevent the default browser save action
             event.preventDefault();
             
-            // Only save if we're in the password management section
             if (passwordManagement.style.display === 'block') {
                 savePasswordFile();
             }
         }
     }
     
-    // Event Listeners
     adminLoginButton.addEventListener('click', adminLogin);
     
     adminPassword.addEventListener('keypress', function(event) {
@@ -755,18 +1109,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     logoutButton.addEventListener('click', adminLogout);
     
-    // Add global keydown event listener for Ctrl+S
     document.addEventListener('keydown', handleKeyboardShortcut);
-    
-    // Track focus on new username and password fields
     newUsername.addEventListener('focus', () => { isEditorFocused = true; });
     newUsername.addEventListener('blur', () => { isEditorFocused = false; });
     newPassword.addEventListener('focus', () => { isEditorFocused = true; });
     newPassword.addEventListener('blur', () => { isEditorFocused = false; });
     
-    // Initialize the page - always require login
     initializePage();
     
-    // Initially disable login button until admin password is loaded
     adminLoginButton.disabled = true;
 });

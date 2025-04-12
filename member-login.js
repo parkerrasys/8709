@@ -84,25 +84,43 @@ document.addEventListener('DOMContentLoaded', function() {
         // Process each entry
         entries.forEach(entry => {
             const parts = entry.trim().split('|');
-            if (parts.length === 3) {
-                // format: username|displayName|password
+            if (parts.length === 4) {
+                // New format: username|displayName|password|role1-role2-role3
                 const username = parts[0].trim();
                 const displayName = parts[1].trim();
                 const password = parts[2].trim();
+                const rolesString = parts[3].trim();
+                const roles = rolesString.split('-').map(role => role.trim());
+                
                 validPasswords[username] = {
                     displayName: displayName,
-                    password: password
+                    password: password,
+                    roles: roles
+                };
+            } else if (parts.length === 3) {
+                // Old format: username|displayName|password
+                const username = parts[0].trim();
+                const displayName = parts[1].trim();
+                const password = parts[2].trim();
+                
+                validPasswords[username] = {
+                    displayName: displayName,
+                    password: password,
+                    roles: ['member'] // Default role
                 };
             } else if (parts.length === 2) {
+                // Legacy format: username|password
                 const username = parts[0].trim();
                 const password = parts[1].trim();
                 const displayName = username
                     .split('_')
                     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
                     .join(' ');
+                
                 validPasswords[username] = {
                     displayName: displayName,
-                    password: password
+                    password: password,
+                    roles: ['member'] // Default role
                 };
             }
         });
@@ -153,6 +171,13 @@ document.addEventListener('DOMContentLoaded', function() {
             sessionStorage.setItem('memberLoggedIn', 'true');
             sessionStorage.setItem('memberName', enteredUsername);
             sessionStorage.setItem('memberDisplayName', validPasswords[enteredUsername].displayName);
+            
+            // Store user roles in session storage
+            if (validPasswords[enteredUsername].roles) {
+                sessionStorage.setItem('memberRoles', JSON.stringify(validPasswords[enteredUsername].roles));
+            } else {
+                sessionStorage.setItem('memberRoles', JSON.stringify(['member']));
+            }
             
             window.location.href = 'member-area.html';
         } else {
