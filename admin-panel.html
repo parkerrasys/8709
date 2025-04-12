@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Password Management - Pathfinder Tech Robotics</title>
-    <link rel="icon" href="./ptrlogo.ico" type="image/x-icon">
-    <link rel="stylesheet" href="./admin-panel.html">
+    <link rel="icon" href="../ptrlogo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./member-login.css">
     <style>
         .admin-container {
             max-width: 800px;
@@ -63,18 +63,20 @@
         }
         
         /* Horizontal layout for add user form */
-        .add-user-form {
+        .add-user-form, .add-schedule-form {
             display: flex;
             align-items: flex-end;
             gap: 15px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         
-        .add-user-form .form-group {
+        .add-user-form .form-group, .add-schedule-form .form-group {
             flex: 1;
+            min-width: 150px;
         }
         
-        .add-user-form .form-actions {
+        .add-user-form .form-actions, .add-schedule-form .form-actions {
             margin-bottom: 10px; /* Align with input fields */
         }
         
@@ -134,6 +136,55 @@
             font-size: 0.9em;
             color: #5c9bd6;
         }
+        
+        /* Tab Styles */
+        .tabs-container {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1d5280;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background-color: #0d314e;
+            color: #5c9bd6;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background-color: #1d5280;
+            color: #ffffff;
+            border-bottom: 2px solid #5c9bd6;
+            margin-bottom: -2px;
+        }
+        
+        .tab-button:hover {
+            background-color: #1d5280;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .schedule-row td input {
+            width: 100%;
+            background-color: #103a5a;
+            color: #ffffff;
+            border: 1px solid #1d5280;
+            padding: 5px 8px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .schedule-row td input:focus {
+            background-color: #0d314e;
+            border-color: #5c9bd6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(92, 155, 214, 0.25);
+        }
     </style>
 </head>
 <body>
@@ -141,7 +192,7 @@
     <header>
         <div class="container header-content">
             <div class="logo-container">
-                <img src="./ptrlogo.ico" alt="Team Logo" class="logo-img">
+                <img src="../ptrlogo.ico" alt="Team Logo" class="logo-img">
                 <div class="logo-text">
                     <h1>Pathfinder Tech Robotics</h1>
                     <p>Team 8709</p>
@@ -182,43 +233,100 @@
                     <div id="loadingIndicator" class="loading">Loading user data...</div>
                     
                     <div id="passwordContent" style="display: none;">
-                        <div class="password-list">
-                            <table id="userTable">
-                                <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>Display Name</th>
-                                        <th>Password</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <h3>Add New User</h3>
-                                <div class="add-user-form">
-                                    <div class="form-group">
-                                        <label for="newUsername">Username (e.g., john_doe):</label>
-                                        <input type="text" id="newUsername" name="newUsername" placeholder="Enter username">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="newPassword">Password:</label>
-                                        <input type="text" id="newPassword" name="newPassword" placeholder="Enter password">
-                                    </div>
-                                    
-                                    <div class="form-actions">
-                                        <button id="addUserButton" class="btn">Add User</button>
-                                    </div>
+                        <!-- Tabs Container -->
+                        <div id="managementTabs" class="tabs-container">
+                            <button id="scheduleTabButton" class="tab-button active">Schedule</button>
+                            <button id="passwordTabButton" class="tab-button">User Management</button>
+                        </div>
+                        
+                        <!-- Schedule Tab Content -->
+                        <div id="scheduleTabContent" class="tab-content">
+                            <h3>Create a Meeting</h3>
+                            <br>
+                            <div class="add-schedule-form">
+                                <div class="form-group">
+                                    <label for="newScheduleDate">Date (MM/DD):</label>
+                                    <input type="text" id="newScheduleDate" placeholder="e.g., 4/13">
                                 </div>
+                                
+                                <div class="form-group">
+                                    <label for="newScheduleTime">Time:</label>
+                                    <input type="text" id="newScheduleTime" placeholder="e.g., 3:30pm">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="newScheduleType">Location:</label>
+                                    <input type="text" id="newScheduleType" placeholder="e.g., CAD (Room 222)">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="newScheduleDescription">Description:</label>
+                                    <input type="text" id="newScheduleDescription" placeholder="Today we will...">
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button id="addScheduleButton" class="btn">Create Meeting</button>
+                                </div>
+                            </div>
+
+                            <div class="schedule-list">
+                                <table id="scheduleTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="scheduleTableBody">
+                                        <!-- Schedule data will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Password Tab Content -->
+                        <div id="passwordTabContent" class="tab-content">
+                            <h3>Add New User</h3>
+                            <div class="add-user-form">
+                                <div class="form-group">
+                                    <label for="newUsername">Username (e.g., john_doe):</label>
+                                    <input type="text" id="newUsername" name="newUsername" placeholder="Enter username">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="newPassword">Password:</label>
+                                    <input type="text" id="newPassword" name="newPassword" placeholder="Enter password">
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button id="addUserButton" class="btn">Add User</button>
+                                </div>
+                            </div>
+
+                            <div class="password-list">
                                 <div class="search-container">
                                     <input type="text" id="userSearchInput" placeholder="Search users..." class="search-input">
                                     <div class="search-stats" id="searchStats">Showing all users</div>
                                 </div>
-                                <tbody id="userTableBody">
-                                    <!-- User data will be populated here -->
-                                </tbody>
-                            </table>
+                                <table id="userTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Display Name</th>
+                                            <th>Password</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userTableBody">
+                                        <!-- User data will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     
-                        
                         <div class="form-actions button-container">
                             <button id="logoutButton" class="btn btn-secondary">Logout</button>
                         </div>
@@ -254,7 +362,7 @@
         </div>
     </footer>
                         
-    <script src="password-admin.js"></script>
+    <script src="admin-panel.js"></script>
     <script>
         const allowedReferrer = "member-area.html";
         
@@ -269,3 +377,4 @@
     </script>
 </body>
 </html>
+```

@@ -4,12 +4,16 @@ document.addEventListener('DOMContentLoaded', function() {
         githubRepo: '8709-Storage',
         passwordFilePath: 'users.txt',
         adminPasswordFilePath: 'admin-password.txt',
+        scheduleFilePath: 'schedule.txt',
         defaultPassword: '1234'
     };
 
     const API_KEY = 'AIzaSyC-CRiUBM4ZNQXU_nTjRNjX_YcbRG95TsE';
     const SPREADSHEET_ID = '1MZ6T17q-IcUI2AnZ1nVXtlfyMOHxLl_kTUb5YEI_uLg';
     const CELL_RANGE = 'A2:A2';
+
+    let scheduleData = [];
+    let scheduleFileSha = '';
     
     const adminLoginForm = document.getElementById('adminLoginForm');
     const passwordManagement = document.getElementById('passwordManagement');
@@ -23,6 +27,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const newPassword = document.getElementById('newPassword');
     const addUserButton = document.getElementById('addUserButton');
     const logoutButton = document.getElementById('logoutButton') || createLogoutButton();
+    const tabsContainer = document.getElementById('managementTabs');
+    const passwordTabButton = document.getElementById('passwordTabButton');
+    const scheduleTabButton = document.getElementById('scheduleTabButton');
+    const passwordTabContent = document.getElementById('passwordTabContent');
+    const scheduleTabContent = document.getElementById('scheduleTabContent');
+    const addScheduleButton = document.getElementById('addScheduleButton');
 
     const userSearchInput = document.getElementById('userSearchInput');
     const searchStats = document.getElementById('searchStats');
@@ -115,6 +125,314 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return button;
+    }
+
+    // Parse schedule data from file content with format: date|time|type|description
+    function parseScheduleData(content) {
+        scheduleData = [];
+
+        // Split by lines first, then process each line
+        const lines = content.split('\n').filter(line => line.trim() !== '');
+
+        lines.forEach(line => {
+            // Remove trailing comma if exists
+            const cleanLine = line.trim().endsWith(',') 
+                ? line.trim().substring(0, line.trim().length - 1) 
+                : line.trim();
+
+            // Extract schedule parts from each line
+            const parts = cleanLine.split('|');
+
+            if (parts.length >= 4) {
+                const date = parts[0].trim();
+                const time = parts[1].trim();
+                const type = parts[2].trim();
+                const description = parts[3].trim();
+
+                scheduleData.push({
+                    date,
+                    time,
+                    type,
+                    description
+                });
+            }
+        });
+
+        renderScheduleTable();
+    }
+
+    // Generate file content from schedule data
+    function generateScheduleFileContent() {
+        let content = '';
+
+        if (scheduleData.length > 0) {
+            scheduleData.forEach((item, index) => {
+                content += `${item.date}|${item.time}|${item.type}|${item.description}`;
+                if (index < scheduleData.length - 1) {
+                    content += ',\n';
+                }
+            });
+        }
+
+        return content;
+    }
+
+    // Render the schedule table with current data
+    function renderScheduleTable() {
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
+        if (!scheduleTableBody) return;
+
+        scheduleTableBody.innerHTML = '';
+
+        scheduleData.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'schedule-row';
+            row.setAttribute('data-index', index);
+
+            // Date cell
+            const dateCell = document.createElement('td');
+            const dateInput = document.createElement('input');
+            dateInput.type = 'text';
+            dateInput.value = item.date;
+            dateInput.addEventListener('change', (e) => {
+                scheduleData[index].date = e.target.value;
+                saveScheduleFile();
+            });
+
+            dateInput.addEventListener('focus', () => {
+                isEditorFocused = true;
+            });
+            dateInput.addEventListener('blur', () => {
+                isEditorFocused = false;
+            });
+
+            dateCell.appendChild(dateInput);
+            row.appendChild(dateCell);
+
+            // Time cell
+            const timeCell = document.createElement('td');
+            const timeInput = document.createElement('input');
+            timeInput.type = 'text';
+            timeInput.value = item.time;
+            timeInput.addEventListener('change', (e) => {
+                scheduleData[index].time = e.target.value;
+                saveScheduleFile();
+            });
+
+            timeInput.addEventListener('focus', () => {
+                isEditorFocused = true;
+            });
+            timeInput.addEventListener('blur', () => {
+                isEditorFocused = false;
+            });
+
+            timeCell.appendChild(timeInput);
+            row.appendChild(timeCell);
+
+            // Type cell
+            const typeCell = document.createElement('td');
+            const typeInput = document.createElement('input');
+            typeInput.type = 'text';
+            typeInput.value = item.type;
+            typeInput.addEventListener('change', (e) => {
+                scheduleData[index].type = e.target.value;
+                saveScheduleFile();
+            });
+
+            typeInput.addEventListener('focus', () => {
+                isEditorFocused = true;
+            });
+            typeInput.addEventListener('blur', () => {
+                isEditorFocused = false;
+            });
+
+            typeCell.appendChild(typeInput);
+            row.appendChild(typeCell);
+
+            // Description cell
+            const descriptionCell = document.createElement('td');
+            const descriptionInput = document.createElement('input');
+            descriptionInput.type = 'text';
+            descriptionInput.value = item.description;
+            descriptionInput.addEventListener('change', (e) => {
+                scheduleData[index].description = e.target.value;
+                saveScheduleFile();
+            });
+
+            descriptionInput.addEventListener('focus', () => {
+                isEditorFocused = true;
+            });
+            descriptionInput.addEventListener('blur', () => {
+                isEditorFocused = false;
+            });
+
+            descriptionCell.appendChild(descriptionInput);
+            row.appendChild(descriptionCell);
+
+            // Actions cell
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'actions-cell';
+
+            const moveUpButton = document.createElement('button');
+            moveUpButton.className = 'btn btn-small';
+            moveUpButton.innerHTML = '&uarr;';
+            moveUpButton.title = 'Move Up';
+            moveUpButton.addEventListener('click', () => {
+                if (index > 0) {
+                    [scheduleData[index], scheduleData[index-1]] = [scheduleData[index-1], scheduleData[index]];
+                    saveScheduleFile().then(() => {
+                        renderScheduleTable();
+                        showNotification('Schedule item moved up and saved.');
+                    });
+                }
+            });
+
+            const moveDownButton = document.createElement('button');
+            moveDownButton.className = 'btn btn-small';
+            moveDownButton.innerHTML = '&darr;';
+            moveDownButton.title = 'Move Down';
+            moveDownButton.addEventListener('click', () => {
+                if (index < scheduleData.length - 1) {
+                    [scheduleData[index], scheduleData[index+1]] = [scheduleData[index+1], scheduleData[index]];
+                    saveScheduleFile().then(() => {
+                        renderScheduleTable();
+                        showNotification('Schedule item moved down and saved.');
+                    });
+                }
+            });
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'btn btn-small btn-delete';
+            deleteButton.textContent = 'Delete';
+            deleteButton.addEventListener('click', () => {
+                scheduleData.splice(index, 1);
+                saveScheduleFile().then(() => {
+                    renderScheduleTable();
+                    showNotification('Schedule item deleted and saved.');
+                });
+            });
+
+            actionsCell.appendChild(moveUpButton);
+            actionsCell.appendChild(moveDownButton);
+            actionsCell.appendChild(deleteButton);
+            row.appendChild(actionsCell);
+
+            scheduleTableBody.appendChild(row);
+        });
+    }
+
+    // Fetch schedule file from GitHub
+    async function fetchScheduleFile() {
+        const scheduleContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.scheduleFilePath}`;
+
+        try {
+            console.log('Fetching schedule file from:', scheduleContentsUrl);
+            const response = await fetch(scheduleContentsUrl, {
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('GitHub API Error:', response.status, errorData);
+                throw new Error(`Failed to fetch schedule file: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            scheduleFileSha = data.sha;
+
+            const content = atob(data.content);
+            parseScheduleData(content);
+
+        } catch (error) {
+            console.error('Error fetching schedule file:', error);
+            showNotification('Failed to load schedule data: ' + error.message, true);
+        }
+    }
+
+    // Save schedule file to GitHub
+    async function saveScheduleFile() {
+        if (isSaving) return Promise.resolve();
+
+        isSaving = true;
+        showSavingIndicator();
+
+        const scheduleContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.scheduleFilePath}`;
+
+        try {
+            const content = generateScheduleFileContent();
+
+            // Encode content to Base64
+            const base64Content = btoa(content);
+
+            const response = await fetch(scheduleContentsUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Update schedule file',
+                    content: base64Content,
+                    sha: scheduleFileSha
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('GitHub API Error:', response.status, errorData);
+                throw new Error(`Failed to save schedule file: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            scheduleFileSha = data.content.sha;
+
+            showNotification('Schedule changes saved successfully!');
+            return Promise.resolve();
+
+        } catch (error) {
+            console.error('Error saving schedule file:', error);
+            showNotification('Failed to save schedule data: ' + error.message, true);
+            return Promise.reject(error);
+        } finally {
+            isSaving = false;
+            hideSavingIndicator();
+        }
+    }
+
+    // Add a new schedule item
+    function addNewScheduleItem() {
+        const date = document.getElementById('newScheduleDate').value.trim();
+        const time = document.getElementById('newScheduleTime').value.trim();
+        const type = document.getElementById('newScheduleType').value.trim();
+        const description = document.getElementById('newScheduleDescription').value.trim();
+
+        if (!date || !time || !type || !description) {
+            showNotification('All fields are required for schedule items', true);
+            return;
+        }
+
+        // Add the new schedule item
+        scheduleData.push({
+            date,
+            time,
+            type,
+            description
+        });
+
+        // Save the new schedule data
+        saveScheduleFile().then(() => {
+            document.getElementById('newScheduleDate').value = '';
+            document.getElementById('newScheduleTime').value = '';
+            document.getElementById('newScheduleType').value = '';
+            document.getElementById('newScheduleDescription').value = '';
+            renderScheduleTable();
+
+            showNotification('Schedule item added and saved successfully!');
+        });
     }
 
     // Add modal for roles editor
@@ -610,6 +928,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const indicator = document.getElementById('savingIndicator');
         indicator.style.display = 'none';
     }
+
+    function switchTab(tabName) {
+        if (tabName === 'users') {
+            passwordTabContent.style.display = 'block';
+            scheduleTabContent.style.display = 'none';
+            passwordTabButton.classList.add('active');
+            scheduleTabButton.classList.remove('active');
+        } else if (tabName === 'schedule') {
+            passwordTabContent.style.display = 'none';
+            scheduleTabContent.style.display = 'block';
+            passwordTabButton.classList.remove('active');
+            scheduleTabButton.classList.add('active');
+        }
+    }
     
     function getUserRole(user) {
         
@@ -632,6 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'member'; // Default
     }
     
+    // Add to the initializePage function
     function initializePage() {
         adminLoginForm.style.display = 'block';
         passwordManagement.style.display = 'none';
@@ -641,6 +974,47 @@ document.addEventListener('DOMContentLoaded', function() {
         adminLoginButton.disabled = true;
         fetchGithubToken();
         addRolesEditorModal();
+
+        // Set up tab functionality
+        if (tabsContainer) {
+            passwordTabButton.addEventListener('click', () => {
+                switchTab('users');
+            });
+
+            scheduleTabButton.addEventListener('click', () => {
+                switchTab('schedule');
+            });
+        }
+
+        // Add schedule item button event
+        if (addScheduleButton) {
+            addScheduleButton.addEventListener('click', addNewScheduleItem);
+
+            // Add enter key event listeners for schedule form
+            document.getElementById('newScheduleDate').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    addNewScheduleItem();
+                }
+            });
+
+            document.getElementById('newScheduleTime').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    addNewScheduleItem();
+                }
+            });
+
+            document.getElementById('newScheduleType').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    addNewScheduleItem();
+                }
+            });
+
+            document.getElementById('newScheduleDescription').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    addNewScheduleItem();
+                }
+            });
+        }
     }
     
     async function fetchAdminPassword() {
@@ -703,6 +1077,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             loadingIndicator.style.display = 'none';
             passwordContent.style.display = 'block';
+
+            switchTab('schedule');
+
+            fetchScheduleFile();
             
         } catch (error) {
             console.error('Error fetching file:', error);
