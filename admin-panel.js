@@ -1,1542 +1,1268 @@
+// Configuration and Constants
+const CONFIG = {
+    github: {
+        user: 'parkerrasys',
+        repo: '8709-Storage',
+        files: {
+            passwords: 'users.txt',
+            adminPassword: 'admin-password.txt',
+            schedule: 'schedule.txt'
+        }
+    },
+    googleSheets: {
+        apiKey: 'AIzaSyC-CRiUBM4ZNQXU_nTjRNjX_YcbRG95TsE',
+        spreadsheetId: '1MZ6T17q-IcUI2AnZ1nVXtlfyMOHxLl_kTUb5YEI_uLg',
+        cellRange: 'A2:A2'
+    },
+    defaults: {
+        password: '1234'
+    }
+};
+
+// State Management
+const state = {
+    githubToken: '',
+    adminPassword: '',
+    usersData: [],
+    scheduleData: [],
+    currentFileSha: '',
+    scheduleFileSha: '',
+    isSaving: false,
+    isEditorFocused: false,
+    currentSearchTerm: '',
+    currentEditingUserIndex: -1,
+    currentRoles: []
+};
+
+// DOM Elements
+const elements = {};
+
+// Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
-    const config = {
-        githubUser: 'parkerrasys',
-        githubRepo: '8709-Storage',
-        passwordFilePath: 'users.txt',
-        adminPasswordFilePath: 'admin-password.txt',
-        scheduleFilePath: 'schedule.txt',
-        defaultPassword: '1234'
-    };
+    initializeDOMElements();
+    setupEventListeners();
+    initializeStyles();
+    initializePage();
+});
 
-    const API_KEY = 'AIzaSyC-CRiUBM4ZNQXU_nTjRNjX_YcbRG95TsE';
-    const SPREADSHEET_ID = '1MZ6T17q-IcUI2AnZ1nVXtlfyMOHxLl_kTUb5YEI_uLg';
-    const CELL_RANGE = 'A2:A2';
+// DOM Element Initialization
+function initializeDOMElements() {
+    const elementIds = [
+        'adminLoginForm', 'passwordManagement', 'adminPassword', 'adminLoginButton',
+        'adminLoginError', 'loadingIndicator', 'passwordContent', 'userTableBody',
+        'newUsername', 'newPassword', 'addUserButton', 'logoutButton',
+        'managementTabs', 'passwordTabButton', 'scheduleTabButton',
+        'passwordTabContent', 'scheduleTabContent', 'addScheduleButton',
+        'userSearchInput', 'searchStats', 'notificationContainer', 'scheduleTableBody',
+        'newScheduleDate', 'newScheduleTime', 'newScheduleType', 'newScheduleDescription'
+    ];
 
-    let scheduleData = [];
-    let scheduleFileSha = '';
-    
-    const adminLoginForm = document.getElementById('adminLoginForm');
-    const passwordManagement = document.getElementById('passwordManagement');
-    const adminPassword = document.getElementById('adminPassword');
-    const adminLoginButton = document.getElementById('adminLoginButton');
-    const adminLoginError = document.getElementById('adminLoginError');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const passwordContent = document.getElementById('passwordContent');
-    const userTableBody = document.getElementById('userTableBody');
-    const newUsername = document.getElementById('newUsername');
-    const newPassword = document.getElementById('newPassword');
-    const addUserButton = document.getElementById('addUserButton');
-    const logoutButton = document.getElementById('logoutButton') || createLogoutButton();
-    const tabsContainer = document.getElementById('managementTabs');
-    const passwordTabButton = document.getElementById('passwordTabButton');
-    const scheduleTabButton = document.getElementById('scheduleTabButton');
-    const passwordTabContent = document.getElementById('passwordTabContent');
-    const scheduleTabContent = document.getElementById('scheduleTabContent');
-    const addScheduleButton = document.getElementById('addScheduleButton');
+    elementIds.forEach(id => {
+        elements[id] = document.getElementById(id);
+    });
 
-    const userSearchInput = document.getElementById('userSearchInput');
-    const searchStats = document.getElementById('searchStats');
-    let currentSearchTerm = '';
-    
-    const saveChangesButton = document.getElementById('saveChangesButton');
-    if (saveChangesButton) {
-        saveChangesButton.remove();
+    // Create elements if they don't exist
+    if (!elements.logoutButton) {
+        elements.logoutButton = createLogoutButton();
     }
-    
-    const notificationContainer = document.createElement('div');
-    notificationContainer.id = 'notificationContainer';
-    document.body.appendChild(notificationContainer);
-    
-    addNotificationStyles();
-    
-    addUserRowStyles();
-    
-    if (newPassword) {
-        newPassword.placeholder = `Default: ${config.defaultPassword}`;
-    }
-    
-    const githubApiBase = 'https://api.github.com';
-    const repoContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.passwordFilePath}`;
-    const adminPasswordUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.adminPasswordFilePath}`;
-    
-    let currentFileSha = '';
-    
-    let usersData = [];
-    
-    let adminPasswordFromRepo = '';
-    
-    let isSaving = false;
-    
-    let isEditorFocused = false;
+}
 
-    let githubToken = '';
+// Event Listeners Setup
+function setupEventListeners() {
+    // Admin Authentication
+    elements.adminLoginButton.addEventListener('click', handleAdminLogin);
+    elements.adminPassword.addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleAdminLogin();
+    });
 
-    userSearchInput.addEventListener('input', function(event) {
-        currentSearchTerm = event.target.value.toLowerCase().trim();
+    // User Management
+    elements.addUserButton.addEventListener('click', handleAddUser);
+    elements.newUsername.addEventListener('keypress', e => {
+        if (e.key === 'Enter') handleAddUser();
+    });
+    elements.newPassword.addEventListener('keypress', e => {
+        if (e.key === 'Enter' && elements.newUsername.value.trim()) handleAddUser();
+    });
+
+    // Search Functionality
+    elements.userSearchInput.addEventListener('input', e => {
+        state.currentSearchTerm = e.target.value.toLowerCase().trim();
         renderUserTable();
     });
 
-    async function fetchGithubToken() {
-        try {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${CELL_RANGE}?key=${API_KEY}`;
+    // Tab Navigation
+    if (elements.managementTabs) {
+        elements.passwordTabButton.addEventListener('click', () => switchTab('users'));
+        elements.scheduleTabButton.addEventListener('click', () => switchTab('schedule'));
+    }
 
+    // Schedule Management
+    if (elements.addScheduleButton) {
+        elements.addScheduleButton.addEventListener('click', handleAddScheduleItem);
+        setupScheduleInputListeners();
+    }
+
+    // Global Keyboard Shortcuts
+    document.addEventListener('keydown', handleKeyboardShortcut);
+}
+
+// GitHub API Functions
+const GitHubAPI = {
+    async fetchToken() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.googleSheets.spreadsheetId}/values/${CONFIG.googleSheets.cellRange}?key=${CONFIG.googleSheets.apiKey}`;
             const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error('Failed to fetch GitHub token from Google Sheets');
-            }
+
+            if (!response.ok) throw new Error('Failed to fetch GitHub token');
 
             const data = await response.json();
-
-            if (data.values && data.values.length > 0 && data.values[0].length > 0) {
-                githubToken = data.values[0][0];
-                console.log('GitHub token fetched successfully');
-
-                // Now that we have the token, we can proceed with initialization
-                adminLoginButton.disabled = false;
-                fetchAdminPassword();
-            } else {
-                throw new Error('No GitHub token found in Google Sheets cell A1');
+            if (data.values?.[0]?.[0]) {
+                state.githubToken = data.values[0][0];
+                elements.adminLoginButton.disabled = false;
+                return true;
             }
+            throw new Error('No GitHub token found');
         } catch (error) {
-            console.error('Error fetching GitHub token:', error);
-            adminLoginError.textContent = 'Unable to connect to authentication service. Please try again later.';
-            adminLoginButton.disabled = true;
+            console.error('Token fetch error:', error);
+            showNotification(error.message, true);
+            return false;
         }
-    }
-    
-    function createLogoutButton() {
-        const button = document.createElement('button');
-        button.id = 'logoutButton';
-        button.className = 'btn btn-secondary';
-        button.textContent = 'Logout';
-        button.style.marginLeft = '10px';
-        
-        const buttonContainer = document.querySelector('.button-container') || 
-                               document.querySelector('.controls') || 
-                               document.querySelector('.form-actions');
-        
-        if (buttonContainer) {
-            buttonContainer.appendChild(button);
-        } else {
-            const container = document.createElement('div');
-            container.className = 'form-actions button-container';
-            container.appendChild(button);
-            passwordContent.appendChild(container);
-        }
-        
-        return button;
-    }
+    },
 
-    // Parse schedule data from file content with format: date|time|type|description
-    function parseScheduleData(content) {
-        scheduleData = [];
-
-        // Split by lines first, then process each line
-        const lines = content.split('\n').filter(line => line.trim() !== '');
-
-        lines.forEach(line => {
-            // Remove trailing comma if exists
-            const cleanLine = line.trim().endsWith(',') 
-                ? line.trim().substring(0, line.trim().length - 1) 
-                : line.trim();
-
-            // Extract schedule parts from each line
-            const parts = cleanLine.split('|');
-
-            if (parts.length >= 4) {
-                const date = parts[0].trim();
-                const time = parts[1].trim();
-                const type = parts[2].trim();
-                const description = parts[3].trim();
-
-                scheduleData.push({
-                    date,
-                    time,
-                    type,
-                    description
-                });
-            }
-        });
-
-        renderScheduleTable();
-    }
-
-    // Generate file content from schedule data
-    function generateScheduleFileContent() {
-        let content = '';
-
-        if (scheduleData.length > 0) {
-            scheduleData.forEach((item, index) => {
-                content += `${item.date}|${item.time}|${item.type}|${item.description}`;
-                if (index < scheduleData.length - 1) {
-                    content += ',\n';
-                }
-            });
-        }
-
-        return content;
-    }
-
-    // Render the schedule table with current data
-    function renderScheduleTable() {
-        const scheduleTableBody = document.getElementById('scheduleTableBody');
-        if (!scheduleTableBody) return;
-
-        scheduleTableBody.innerHTML = '';
-
-        scheduleData.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.className = 'schedule-row';
-            row.setAttribute('data-index', index);
-
-            // Date cell
-            const dateCell = document.createElement('td');
-            const dateInput = document.createElement('input');
-            dateInput.type = 'text';
-            dateInput.value = item.date;
-            dateInput.addEventListener('change', (e) => {
-                scheduleData[index].date = e.target.value;
-                saveScheduleFile();
-            });
-
-            dateInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            dateInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            dateCell.appendChild(dateInput);
-            row.appendChild(dateCell);
-
-            // Time cell
-            const timeCell = document.createElement('td');
-            const timeInput = document.createElement('input');
-            timeInput.type = 'text';
-            timeInput.value = item.time;
-            timeInput.addEventListener('change', (e) => {
-                scheduleData[index].time = e.target.value;
-                saveScheduleFile();
-            });
-
-            timeInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            timeInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            timeCell.appendChild(timeInput);
-            row.appendChild(timeCell);
-
-            // Type cell
-            const typeCell = document.createElement('td');
-            const typeInput = document.createElement('input');
-            typeInput.type = 'text';
-            typeInput.value = item.type;
-            typeInput.addEventListener('change', (e) => {
-                scheduleData[index].type = e.target.value;
-                saveScheduleFile();
-            });
-
-            typeInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            typeInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            typeCell.appendChild(typeInput);
-            row.appendChild(typeCell);
-
-            // Description cell
-            const descriptionCell = document.createElement('td');
-            const descriptionInput = document.createElement('input');
-            descriptionInput.type = 'text';
-            descriptionInput.value = item.description;
-            descriptionInput.addEventListener('change', (e) => {
-                scheduleData[index].description = e.target.value;
-                saveScheduleFile();
-            });
-
-            descriptionInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            descriptionInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            descriptionCell.appendChild(descriptionInput);
-            row.appendChild(descriptionCell);
-
-            // Actions cell
-            const actionsCell = document.createElement('td');
-            actionsCell.className = 'actions-cell';
-
-            const moveUpButton = document.createElement('button');
-            moveUpButton.className = 'btn btn-small';
-            moveUpButton.innerHTML = '&uarr;';
-            moveUpButton.title = 'Move Up';
-            moveUpButton.addEventListener('click', () => {
-                if (index > 0) {
-                    [scheduleData[index], scheduleData[index-1]] = [scheduleData[index-1], scheduleData[index]];
-                    saveScheduleFile().then(() => {
-                        renderScheduleTable();
-                        showNotification('Schedule item moved up and saved.');
-                    });
-                }
-            });
-
-            const moveDownButton = document.createElement('button');
-            moveDownButton.className = 'btn btn-small';
-            moveDownButton.innerHTML = '&darr;';
-            moveDownButton.title = 'Move Down';
-            moveDownButton.addEventListener('click', () => {
-                if (index < scheduleData.length - 1) {
-                    [scheduleData[index], scheduleData[index+1]] = [scheduleData[index+1], scheduleData[index]];
-                    saveScheduleFile().then(() => {
-                        renderScheduleTable();
-                        showNotification('Schedule item moved down and saved.');
-                    });
-                }
-            });
-
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'btn btn-small btn-delete';
-            deleteButton.textContent = 'Delete';
-            deleteButton.addEventListener('click', () => {
-                scheduleData.splice(index, 1);
-                saveScheduleFile().then(() => {
-                    renderScheduleTable();
-                    showNotification('Schedule item deleted and saved.');
-                });
-            });
-
-            actionsCell.appendChild(moveUpButton);
-            actionsCell.appendChild(moveDownButton);
-            actionsCell.appendChild(deleteButton);
-            row.appendChild(actionsCell);
-
-            scheduleTableBody.appendChild(row);
-        });
-    }
-
-    // Fetch schedule file from GitHub
-    async function fetchScheduleFile() {
-        const scheduleContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.scheduleFilePath}`;
-
+    async fetchAdminPassword() {
+        const url = `https://api.github.com/repos/${CONFIG.github.user}/${CONFIG.github.repo}/contents/${CONFIG.github.files.adminPassword}`;
         try {
-            console.log('Fetching schedule file from:', scheduleContentsUrl);
-            const response = await fetch(scheduleContentsUrl, {
+            const response = await fetch(url, {
                 headers: {
-                    'Authorization': `token ${githubToken}`,
+                    'Authorization': `token ${state.githubToken}`,
                     'Accept': 'application/vnd.github.v3+json'
                 }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('GitHub API Error:', response.status, errorData);
-                throw new Error(`Failed to fetch schedule file: ${response.status} ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error('Failed to fetch admin password');
 
             const data = await response.json();
-            scheduleFileSha = data.sha;
-
-            const content = atob(data.content);
-            parseScheduleData(content);
-
+            state.adminPassword = atob(data.content).trim();
+            elements.adminLoginButton.disabled = false;
         } catch (error) {
-            console.error('Error fetching schedule file:', error);
-            showNotification('Failed to load schedule data: ' + error.message, true);
+            console.error('Admin password fetch error:', error);
+            showNotification(error.message, true);
         }
-    }
+    },
 
-    // Save schedule file to GitHub
-    async function saveScheduleFile() {
-        if (isSaving) return Promise.resolve();
-
-        isSaving = true;
-        showSavingIndicator();
-
-        const scheduleContentsUrl = `${githubApiBase}/repos/${config.githubUser}/${config.githubRepo}/contents/${config.scheduleFilePath}`;
-
+    async fetchPasswordFile() {
+        const url = `https://api.github.com/repos/${CONFIG.github.user}/${CONFIG.github.repo}/contents/${CONFIG.github.files.passwords}`;
         try {
-            const content = generateScheduleFileContent();
-
-            // Encode content to Base64
-            const base64Content = btoa(content);
-
-            const response = await fetch(scheduleContentsUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: 'Update schedule file',
-                    content: base64Content,
-                    sha: scheduleFileSha
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('GitHub API Error:', response.status, errorData);
-                throw new Error(`Failed to save schedule file: ${response.status} ${response.statusText}`);
-            }
-
+            const response = await fetch(url, { headers: {
+                'Authorization': `token ${state.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }});
+            if (!response.ok) throw new Error(`Failed to fetch password file: ${response.status} ${response.statusText}`);
             const data = await response.json();
-            scheduleFileSha = data.content.sha;
-
-            showNotification('Schedule changes saved successfully!');
-            return Promise.resolve();
-
-        } catch (error) {
-            console.error('Error saving schedule file:', error);
-            showNotification('Failed to save schedule data: ' + error.message, true);
-            return Promise.reject(error);
-        } finally {
-            isSaving = false;
-            hideSavingIndicator();
-        }
-    }
-
-    // Add a new schedule item
-    function addNewScheduleItem() {
-        const date = document.getElementById('newScheduleDate').value.trim();
-        const time = document.getElementById('newScheduleTime').value.trim();
-        const type = document.getElementById('newScheduleType').value.trim();
-        const description = document.getElementById('newScheduleDescription').value.trim();
-
-        if (!date || !time || !type || !description) {
-            showNotification('All fields are required for schedule items', true);
-            return;
-        }
-
-        // Add the new schedule item
-        scheduleData.push({
-            date,
-            time,
-            type,
-            description
-        });
-
-        // Save the new schedule data
-        saveScheduleFile().then(() => {
-            document.getElementById('newScheduleDate').value = '';
-            document.getElementById('newScheduleTime').value = '';
-            document.getElementById('newScheduleType').value = '';
-            document.getElementById('newScheduleDescription').value = '';
-            renderScheduleTable();
-
-            showNotification('Schedule item added and saved successfully!');
-        });
-    }
-
-    // Add modal for roles editor
-    function addRolesEditorModal() {
-        if (document.getElementById('rolesEditorModal')) return;
-
-        const modal = document.createElement('div');
-        modal.id = 'rolesEditorModal';
-        modal.className = 'modal';
-        modal.style.display = 'none';
-
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h3>Edit User Roles</h3>
-                <div id="currentRolesList" class="current-roles-list"></div>
-                <div class="add-role-form">
-                    <input type="text" id="newRoleInput" placeholder="Enter new role..." />
-                    <button id="addRoleButton" class="btn">Add Role</button>
-                </div>
-                <div class="preset-roles">
-                    <h4>Common Roles:</h4>
-                    <div class="preset-buttons">
-                        <button class="preset-role" data-role="Member">Member</button>
-                        <button class="preset-role" data-role="Mentor">Mentor</button>
-                        <button class="preset-role" data-role="Team Lead">Team Lead</button>
-                        <button class="preset-role" data-role="Admin">Admin</button>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="closeRolesButton" class="btn">Close</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // Add modal styles
-        const styleTag = document.createElement('style');
-        styleTag.id = 'roles-modal-styles';
-        styleTag.textContent = `
-            .modal {
-                display: none;
-                position: fixed;
-                z-index: 10000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                overflow: auto;
-                background-color: rgba(0,0,0,0.5);
-            }
-
-            .modal-content {
-                background-color: #103a5a;
-                margin: 10% auto;
-                padding: 20px;
-                border: 1px solid #1d5280;
-                border-radius: 5px;
-                width: 80%;
-                max-width: 600px;
-                color: #ffffff;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            }
-
-            .close-modal {
-                color: #aaa;
-                float: right;
-                font-size: 28px;
-                font-weight: bold;
-                cursor: pointer;
-            }
-
-            .close-modal:hover,
-            .close-modal:focus {
-                color: #fff;
-                text-decoration: none;
-                cursor: pointer;
-            }
-
-            .current-roles-list {
-                margin: 15px 0;
-                padding: 10px;
-                background-color: #0d314e;
-                border-radius: 5px;
-                min-height: 40px;
-            }
-
-            .role-tag {
-                display: inline-block;
-                background-color: #1d5280;
-                color: white;
-                padding: 5px 10px;
-                margin: 5px;
-                border-radius: 3px;
-                position: relative;
-            }
-
-            .role-delete {
-                margin-left: 8px;
-                color: rgba(255,255,255,0.7);
-                cursor: pointer;
-            }
-
-            .role-delete:hover {
-                color: #ff8a80;
-            }
-
-            .add-role-form {
-                display: flex;
-                margin: 15px 0;
-                gap: 10px;
-            }
-
-            .add-role-form input {
-                flex: 1;
-                padding: 8px;
-                background-color: #0d314e;
-                border: 1px solid #1d5280;
-                color: white;
-                border-radius: 3px;
-            }
-
-            .preset-roles {
-                margin: 15px 0;
-            }
-
-            .preset-buttons {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 5px;
-                margin-top: 10px;
-            }
-
-            .preset-role {
-                background-color: #1d5280;
-                color: white;
-                border: none;
-                padding: 5px 10px;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-
-            .preset-role:hover {
-                background-color: #2d6290;
-            }
-
-            .modal-footer {
-                margin-top: 20px;
-                text-align: right;
-            }
-
-            /* Style for role in table */
-            .roles-display {
-                margin-bottom: 8px;
-                font-size: 0.9em;
-                color: #5c9bd6;
-            }
-        `;
-        document.head.appendChild(styleTag);
-
-        // Set up event listeners for modal
-        const closeBtn = modal.querySelector('.close-modal');
-        closeBtn.addEventListener('click', closeRolesEditor);
-
-        const closeRolesBtn = document.getElementById('closeRolesButton');
-        closeRolesBtn.addEventListener('click', closeRolesEditor);
-
-        const addRoleBtn = document.getElementById('addRoleButton');
-        addRoleBtn.addEventListener('click', addNewRole);
-
-        const newRoleInput = document.getElementById('newRoleInput');
-        newRoleInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addNewRole();
-            }
-        });
-
-        // Set up preset role buttons
-        const presetButtons = modal.querySelectorAll('.preset-role');
-        presetButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const role = button.getAttribute('data-role');
-                addRoleToEditor(role);
-            });
-        });
-
-        // Close modal when clicking outside
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                closeRolesEditor();
-            }
-        });
-    }
-
-    // Current user index for the roles editor
-    let currentEditingUserIndex = -1;
-    let currentRoles = [];
-
-    // Open the roles editor for a specific user
-    function openRolesEditor(userIndex) {
-        currentEditingUserIndex = userIndex;
-        currentRoles = [...usersData[userIndex].roles];
-
-        const modal = document.getElementById('rolesEditorModal');
-        if (!modal) {
-            addRolesEditorModal();
-        }
-
-        // Update modal title to include user's name
-        const userName = usersData[userIndex].displayName;
-        const modalTitle = modal.querySelector('h3');
-        modalTitle.innerHTML = `Edit User Roles - <span style="color: #FFD700;">${userName}</span>`;
-
-        // Update current roles list
-        renderCurrentRoles();
-
-        // Show the modal
-        document.getElementById('rolesEditorModal').style.display = 'block';
-    }
-
-    // Close the roles editor without saving
-    function closeRolesEditor() {
-        document.getElementById('rolesEditorModal').style.display = 'none';
-        currentEditingUserIndex = -1;
-        currentRoles = [];
-    }
-
-    // Render the current roles in the editor
-    function renderCurrentRoles() {
-        const rolesList = document.getElementById('currentRolesList');
-        rolesList.innerHTML = '';
-
-        if (currentRoles.length === 0) {
-            rolesList.innerHTML = '<em>No roles assigned</em>';
-            return;
-        }
-
-        currentRoles.forEach((role, index) => {
-            const roleTag = document.createElement('div');
-            roleTag.className = 'role-tag';
-
-            const roleText = document.createTextNode(role);
-            roleTag.appendChild(roleText);
-
-            const deleteBtn = document.createElement('span');
-            deleteBtn.className = 'role-delete';
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.addEventListener('click', () => {
-                deleteRole(index);
-            });
-
-            roleTag.appendChild(deleteBtn);
-            rolesList.appendChild(roleTag);
-        });
-    }
-
-    // Delete a role from the current roles
-    function deleteRole(index) {
-        currentRoles.splice(index, 1);
-        renderCurrentRoles();
-        
-        // Save changes automatically
-        saveRoleChangesToUser();
-    }
-    
-    // Add a new role to the current roles
-    function addNewRole() {
-        const input = document.getElementById('newRoleInput');
-        const role = input.value.trim();
-        
-        if (role) {
-            addRoleToEditor(role);
-            input.value = '';
-        }
-    }
-    
-    // Add a role to the editor (used by both manual add and presets)
-    function addRoleToEditor(role) {
-        if (role && !currentRoles.includes(role)) {
-            currentRoles.push(role);
-            renderCurrentRoles();
-            
-            // Save changes automatically
-            saveRoleChangesToUser();
-        }
-    }
-    
-    // Save the roles changes to the user data
-    function saveRoleChangesToUser() {
-        if (currentEditingUserIndex >= 0) {
-            usersData[currentEditingUserIndex].roles = currentRoles;
-            
-            // Save to file
-            savePasswordFile().then(() => {
-                renderUserTable();
-                showNotification('User roles updated and saved successfully!');
-            });
-        }
-    }
-    
-    function addNotificationStyles() {
-        if (document.getElementById('notification-styles')) return;
-        
-        const styleTag = document.createElement('style');
-        styleTag.id = 'notification-styles';
-        styleTag.textContent = `
-            #notificationContainer {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 9999;
-                max-width: 350px;
-            }
-            
-            .notification {
-                margin-bottom: 15px;
-                padding: 15px;
-                border-radius: 5px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-                animation: slideIn 0.3s ease-out forwards;
-                position: relative;
-                overflow: hidden;
-            }
-            
-            .notification.success {
-                background-color: #103a5a;
-                color: #81c784;
-                border-left: 5px solid #81c784;
-            }
-            
-            .notification.error {
-                background-color: #103a5a;
-                color: #ff8a80;
-                border-left: 5px solid #ff8a80;
-            }
-            
-            .notification-progress {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                height: 3px;
-                background-color: rgba(255,255,255,0.3);
-                width: 100%;
-                transform-origin: left;
-                animation: progress 5s linear forwards;
-            }
-            
-            @keyframes slideIn {
-                from { transform: translateX(120%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(120%); opacity: 0; }
-            }
-            
-            @keyframes progress {
-                from { transform: scaleX(1); }
-                to { transform: scaleX(0); }
-            }
-        `;
-        document.head.appendChild(styleTag);
-    }
-    
-    function addUserRowStyles() {
-        if (document.getElementById('user-row-styles')) return;
-        
-        const styleTag = document.createElement('style');
-        styleTag.id = 'user-row-styles';
-        styleTag.textContent = `
-            .user-row {
-                transition: background-color 0.3s ease;
-            }
-            
-            .user-row:hover {
-                background-color: #0d314e;
-            }
-            
-            .user-row td input {
-                width: 100%;
-                background-color: #103a5a;
-                color: #ffffff;
-                border: 1px solid #1d5280;
-                padding: 5px 8px;
-                border-radius: 3px;
-                transition: all 0.3s ease;
-            }
-            
-            .user-row td input:focus {
-                background-color: #0d314e;
-                border-color: #5c9bd6;
-                outline: none;
-                box-shadow: 0 0 0 2px rgba(92, 155, 214, 0.25);
-            }
-            
-            .user-row td input.admin {
-                border-left: 3px solid rgb(170, 145, 0);
-                font-weight: bold;
-            }
-            
-            .user-row td input.mentor {
-                border-left: 3px solid #81c784;
-                font-weight: bold;
-            }
-            
-            .user-row td input.member {
-                border-left: 3px solid rgb(148, 203, 255);
-            }
-
-            .user-row td input.teamlead {
-                border-left: 3px solid rgb(37, 119, 156);
-            }
-            
-            .user-row td input.guest {
-                border-left: 3px solid #c0c0c0;
-                font-style: italic;
-            }
-            
-            .saving-indicator {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background-color: #103a5a;
-                color: #5c9bd6;
-                padding: 8px 15px;
-                border-radius: 4px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                display: none;
-                z-index: 9999;
-                animation: fadeIn 0.3s ease-out;
-            }
-            
-            .keyboard-shortcut-indicator {
-                position: fixed;
-                bottom: 20px;
-                left: 20px;
-                background-color: rgba(16, 58, 90, 0.8);
-                color: #ffffff;
-                padding: 8px 15px;
-                border-radius: 4px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                z-index: 9998;
-                font-size: 12px;
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-        `;
-        document.head.appendChild(styleTag);
-        
-        const savingIndicator = document.createElement('div');
-        savingIndicator.className = 'saving-indicator';
-        savingIndicator.id = 'savingIndicator';
-        savingIndicator.textContent = 'Saving changes...';
-        document.body.appendChild(savingIndicator);
-        
-        const shortcutIndicator = document.createElement('div');
-        shortcutIndicator.className = 'keyboard-shortcut-indicator';
-        shortcutIndicator.id = 'shortcutIndicator';
-        shortcutIndicator.textContent = 'Press Ctrl+S to save changes';
-        document.body.appendChild(shortcutIndicator);
-    }
-    
-    function showNotification(message, isError = false) {
-        const notification = document.createElement('div');
-        notification.className = `notification ${isError ? 'error' : 'success'}`;
-        notification.textContent = message;
-        
-        const progress = document.createElement('div');
-        progress.className = 'notification-progress';
-        notification.appendChild(progress);
-        
-        notificationContainer.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease-out forwards';
-            setTimeout(() => {
-                notification.remove();
-            }, 300);
-        }, 5000);
-    }
-    
-    function showSavingIndicator() {
-        const indicator = document.getElementById('savingIndicator');
-        indicator.style.display = 'block';
-    }
-    
-    function hideSavingIndicator() {
-        const indicator = document.getElementById('savingIndicator');
-        indicator.style.display = 'none';
-    }
-
-    function switchTab(tabName) {
-        if (tabName === 'users') {
-            passwordTabContent.style.display = 'block';
-            scheduleTabContent.style.display = 'none';
-            passwordTabButton.classList.add('active');
-            scheduleTabButton.classList.remove('active');
-        } else if (tabName === 'schedule') {
-            passwordTabContent.style.display = 'none';
-            scheduleTabContent.style.display = 'block';
-            passwordTabButton.classList.remove('active');
-            scheduleTabButton.classList.add('active');
-        }
-    }
-    
-    function getUserRole(user) {
-        
-        // If passed a user object with roles array
-        if (user.roles && user.roles.length > 0) {
-            // Priority order: admin > mentor > guest > student
-            if (user.roles.includes('Mentor')) {
-                return 'mentor';
-            } else if (user.roles.includes('Admin')) {
-                return 'admin';
-            } else if (user.roles.includes('Guest')) {
-                return 'guest';
-            } else if (user.roles.includes('Team Lead')) {
-                return 'teamlead';
-            } else {
-                return 'member';
-            }
-        }
-        
-        return 'member'; // Default
-    }
-    
-    // Add to the initializePage function
-    function initializePage() {
-        adminLoginForm.style.display = 'block';
-        passwordManagement.style.display = 'none';
-
-        sessionStorage.removeItem('adminLoggedIn');
-
-        adminLoginButton.disabled = true;
-        fetchGithubToken();
-        addRolesEditorModal();
-
-        // Set up tab functionality
-        if (tabsContainer) {
-            passwordTabButton.addEventListener('click', () => {
-                switchTab('users');
-            });
-
-            scheduleTabButton.addEventListener('click', () => {
-                switchTab('schedule');
-            });
-        }
-
-        // Add schedule item button event
-        if (addScheduleButton) {
-            addScheduleButton.addEventListener('click', addNewScheduleItem);
-
-            // Add enter key event listeners for schedule form
-            document.getElementById('newScheduleDate').addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    addNewScheduleItem();
-                }
-            });
-
-            document.getElementById('newScheduleTime').addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    addNewScheduleItem();
-                }
-            });
-
-            document.getElementById('newScheduleType').addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    addNewScheduleItem();
-                }
-            });
-
-            document.getElementById('newScheduleDescription').addEventListener('keypress', function(event) {
-                if (event.key === 'Enter') {
-                    addNewScheduleItem();
-                }
-            });
-        }
-    }
-    
-    async function fetchAdminPassword() {
-        try {
-            const response = await fetch(adminPasswordUrl, {
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('GitHub API Error:', response.status, errorData);
-                throw new Error(`Failed to fetch admin password file: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            
-            adminPasswordFromRepo = atob(data.content).trim();
-            
-            adminLoginButton.disabled = false;
-            
-        } catch (error) {
-            console.error('Error fetching admin password:', error);
-            adminLoginError.textContent = `Unable to connect to authentication service: ${error.message}`;
-            adminLoginButton.disabled = true;
-        }
-    }
-    
-    function showPasswordManagement() {
-        adminLoginForm.style.display = 'none';
-        passwordManagement.style.display = 'block';
-    }
-    
-    async function fetchPasswordFile() {
-        loadingIndicator.style.display = 'block';
-        passwordContent.style.display = 'none';
-        
-        try {
-            console.log('Fetching password file from:', repoContentsUrl);
-            const response = await fetch(repoContentsUrl, {
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('GitHub API Error:', response.status, errorData);
-                throw new Error(`Failed to fetch password file: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            currentFileSha = data.sha;
-            
-            const content = atob(data.content);
-            parseUserData(content);
-            
-            loadingIndicator.style.display = 'none';
-            passwordContent.style.display = 'block';
-
+            state.currentFileSha = data.sha;
+            UserManager.parseUserData(atob(data.content));
+            elements.loadingIndicator.style.display = 'none';
+            elements.passwordContent.style.display = 'block';
             switchTab('schedule');
-
-            fetchScheduleFile();
-            
+            await this.fetchScheduleFile();
         } catch (error) {
-            console.error('Error fetching file:', error);
-            showNotification('Failed to load user data: ' + error.message, true);
-            loadingIndicator.style.display = 'none';
+            console.error('Password file fetch error:', error);
+            showNotification(error.message, true);
+            elements.loadingIndicator.style.display = 'none';
         }
-    }
-    
-    // Parse user data from file content with the updated format: username|displayname|password|roles
-    function parseUserData(content) {
-        usersData = [];
+    },
 
-        // Split by lines first, then process each line
-        const lines = content.split('\n').filter(line => line.trim() !== '');
-
-        lines.forEach(line => {
-            // Remove trailing comma if exists
-            const cleanLine = line.trim().endsWith(',') 
-                ? line.trim().substring(0, line.trim().length - 1) 
-                : line.trim();
-
-            // Extract user parts from each line
-            const parts = cleanLine.split('|');
-
-            if (parts.length === 4) {
-                // New format with roles: username|displayname|password|roles
-                const username = parts[0].trim();
-                const displayName = parts[1].trim();
-                const password = parts[2].trim();
-                const roles = parts[3].trim().split('-');
-
-                usersData.push({
-                    username,
-                    displayName,
-                    password,
-                    roles: roles,
-                    baseRole: getUserRole(username)
-                });
-            } else if (parts.length === 3) {
-                // Previous format: username|displayname|password
-                const username = parts[0].trim();
-                const displayName = parts[1].trim();
-                const password = parts[2].trim();
-
-                usersData.push({
-                    username,
-                    displayName,
-                    password,
-                    roles: [getUserRole(username)],
-                    baseRole: getUserRole(username)
-                });
-            } else if (parts.length === 2) {
-                // Handle old format for backwards compatibility: username|password
-                const username = parts[0].trim();
-                const password = parts[1].trim();
-
-                // Convert username format to display name
-                const displayName = username
-                    .split('_')
-                    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                    .join(' ');
-
-                usersData.push({
-                    username,
-                    displayName,
-                    password,
-                    roles: [getUserRole(username)],
-                    baseRole: getUserRole(username)
-                });
-            }
-        });
-
-        renderUserTable();
-    }
-    
-    // Convert input value to valid username format (replace spaces with underscores)
-    function formatUsername(input) {
-        return input.replace(/\s+/g, '_').toLowerCase();
-    }
-    
-    // Generate display name from username
-    function generateDisplayName(username) {
-        return username
-            .split('_')
-            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-            .join(' ');
-    }
-    
-    // Function to prevent multiple rapid saves
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            const context = this;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), wait);
-        };
-    }
-    
-    // Render the user table with current data
-    function renderUserTable() {
-        userTableBody.innerHTML = '';
-
-        // Filter users based on search term
-        const filteredUsers = usersData.filter(user => {
-            const searchFields = [
-                user.username.toLowerCase(),
-                user.displayName.toLowerCase(),
-                user.roles.join(' ').toLowerCase()
-            ];
-
-            return currentSearchTerm === '' || 
-                   searchFields.some(field => field.includes(currentSearchTerm));
-        });
-
-        // Update search stats
-        if (currentSearchTerm) {
-            searchStats.textContent = `Showing ${filteredUsers.length} of ${usersData.length} users`;
-        } else {
-            searchStats.textContent = `Showing all ${usersData.length} users`;
-        }
-
-        filteredUsers.forEach((user, filteredIndex) => {
-            // Get the original index in the full usersData array
-            const originalIndex = usersData.indexOf(user);
-
-            const row = document.createElement('tr');
-            row.className = 'user-row';
-            row.setAttribute('data-index', originalIndex);
-
-            // Username cell
-            const usernameCell = document.createElement('td');
-            const usernameInput = document.createElement('input');
-            usernameInput.type = 'text';
-            usernameInput.value = user.username;
-            usernameInput.className = getUserRole(user);
-            usernameInput.addEventListener('change', (e) => {
-                const formattedUsername = formatUsername(e.target.value);
-                usernameInput.value = formattedUsername;
-                usersData[originalIndex].username = formattedUsername;
-            
-                const oldAutoDisplay = generateDisplayName(user.username);
-                if (user.displayName === oldAutoDisplay) {
-                    usersData[originalIndex].displayName = generateDisplayName(formattedUsername);
-                }
-            
-                // Get base role from username prefix (for backward compatibility)
-                const newBaseRole = getUserRole(formattedUsername);
-                usersData[originalIndex].baseRole = newBaseRole;
-            
-                // No need to update roles array - we now rely on explicit roles
-                // rather than inferring from username prefix
-            
-                savePasswordFile().then(() => {
-                    renderUserTable();
-                });
-            });
-
-            // Add focus/blur event listeners to track editor state
-            usernameInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            usernameInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            usernameCell.appendChild(usernameInput);
-            row.appendChild(usernameCell);
-
-            // Display name cell - now editable
-            const displayNameCell = document.createElement('td');
-            const displayNameInput = document.createElement('input');
-            displayNameInput.type = 'text';
-            displayNameInput.value = user.displayName;
-            displayNameInput.className = getUserRole(user);
-            displayNameInput.addEventListener('change', (e) => {
-                usersData[originalIndex].displayName = e.target.value;
-                savePasswordFile();
-            });
-
-            // Add focus/blur event listeners to track editor state
-            displayNameInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            displayNameInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            displayNameCell.appendChild(displayNameInput);
-            row.appendChild(displayNameCell);
-
-            // Password cell
-            const passwordCell = document.createElement('td');
-            const passwordInput = document.createElement('input');
-            passwordInput.type = 'text';
-            passwordInput.value = user.password;
-            passwordInput.className = getUserRole(user);
-            passwordInput.addEventListener('change', (e) => {
-                usersData[originalIndex].password = e.target.value;
-                savePasswordFile();
-            });
-
-            // Add focus/blur event listeners to track editor state
-            passwordInput.addEventListener('focus', () => {
-                isEditorFocused = true;
-            });
-            passwordInput.addEventListener('blur', () => {
-                isEditorFocused = false;
-            });
-
-            passwordCell.appendChild(passwordInput);
-            row.appendChild(passwordCell);
-
-            // Roles cell
-            const rolesCell = document.createElement('td');
-            const rolesDisplay = document.createElement('div');
-            rolesDisplay.className = 'roles-display';
-            rolesDisplay.textContent = user.roles.join(', ');
-            rolesCell.appendChild(rolesDisplay);
-
-            // Edit roles button
-            const editRolesButton = document.createElement('button');
-            editRolesButton.className = 'btn btn-small';
-            editRolesButton.textContent = 'Edit Roles';
-            editRolesButton.addEventListener('click', () => {
-                openRolesEditor(originalIndex);
-            });
-            rolesCell.appendChild(editRolesButton);
-            row.appendChild(rolesCell);
-
-            const actionsCell = document.createElement('td');
-            actionsCell.className = 'actions-cell';
-
-            const moveUpButton = document.createElement('button');
-            moveUpButton.className = 'btn btn-small';
-            moveUpButton.innerHTML = '&uarr;';
-            moveUpButton.title = 'Move Up';
-            moveUpButton.addEventListener('click', () => {
-                if (originalIndex > 0) {
-                    [usersData[originalIndex], usersData[originalIndex-1]] = [usersData[originalIndex-1], usersData[originalIndex]];
-
-                    // Save changes and re-render
-                    savePasswordFile().then(() => {
-                        renderUserTable();
-                        showNotification('User moved up and saved.');
-                    });
-                }
-            });
-
-            const moveDownButton = document.createElement('button');
-            moveDownButton.className = 'btn btn-small';
-            moveDownButton.innerHTML = '&darr;';
-            moveDownButton.title = 'Move Down';
-            moveDownButton.addEventListener('click', () => {
-                if (originalIndex < usersData.length - 1) {
-                    [usersData[originalIndex], usersData[originalIndex+1]] = [usersData[originalIndex+1], usersData[originalIndex]];
-
-                    // Save changes and re-render
-                    savePasswordFile().then(() => {
-                        renderUserTable();
-                        showNotification('User moved down and saved.');
-                    });
-                }
-            });
-
-            // Delete button
-            const deleteButton = document.createElement('button');
-            deleteButton.className = 'btn btn-small btn-delete';
-            deleteButton.textContent = 'Delete';
-            deleteButton.addEventListener('click', () => {
-                usersData.splice(originalIndex, 1);
-
-                // Save changes and re-render
-                savePasswordFile().then(() => {
-                    renderUserTable();
-                    showNotification('User deleted and saved.');
-                });
-            });
-
-            // Add buttons to actions cell
-            actionsCell.appendChild(moveUpButton);
-            actionsCell.appendChild(moveDownButton);
-            actionsCell.appendChild(deleteButton);
-            row.appendChild(actionsCell);
-
-            userTableBody.appendChild(row);
-        });
-    }
-    
-    // Generate file content from users data with the updated format: username|displayname|password|roles
-    function generateFileContent() {
-        let content = '';
-
-        if (usersData.length > 0) {
-            usersData.forEach((user, index) => {
-                const rolesString = user.roles.join('-');
-                content += `${user.username}|${user.displayName}|${user.password}|${rolesString}`;
-                if (index < usersData.length - 1) {
-                    content += ',\n';
-                }
-            });
-        }
-
-        return content;
-    }
-    
-    // Save the password file to GitHub
-    async function savePasswordFile() {
-        if (isSaving) return Promise.resolve();
-        
-        isSaving = true;
-        showSavingIndicator();
-        
+    async fetchScheduleFile() {
+        const url = `https://api.github.com/repos/${CONFIG.github.user}/${CONFIG.github.repo}/contents/${CONFIG.github.files.schedule}`;
         try {
-            const content = generateFileContent();
-            
-            // Encode content to Base64
+            const response = await fetch(url, { headers: {
+                'Authorization': `token ${state.githubToken}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }});
+            if (!response.ok) throw new Error(`Failed to fetch schedule file: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+            state.scheduleFileSha = data.sha;
+            ScheduleManager.parseScheduleData(atob(data.content));
+        } catch (error) {
+            console.error('Schedule file fetch error:', error);
+            showNotification(error.message, true);
+        }
+    },
+
+    async savePasswordFile() {
+        if (state.isSaving) return;
+        state.isSaving = true;
+        showSavingIndicator();
+        const url = `https://api.github.com/repos/${CONFIG.github.user}/${CONFIG.github.repo}/contents/${CONFIG.github.files.passwords}`;
+        try {
+            const content = UserManager.generateFileContent();
             const base64Content = btoa(content);
-            
-            const response = await fetch(repoContentsUrl, {
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `token ${githubToken}`,
+                    'Authorization': `token ${state.githubToken}`,
                     'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     message: 'Update passwords file',
                     content: base64Content,
-                    sha: currentFileSha
+                    sha: state.currentFileSha
                 })
             });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('GitHub API Error:', response.status, errorData);
-                throw new Error(`Failed to save password file: ${response.status} ${response.statusText}`);
-            }
-            
+            if (!response.ok) throw new Error(`Failed to save password file: ${response.status} ${response.statusText}`);
             const data = await response.json();
-            currentFileSha = data.content.sha;
-            
+            state.currentFileSha = data.content.sha;
             showNotification('Changes saved successfully!');
-            return Promise.resolve();
-            
         } catch (error) {
-            console.error('Error saving file:', error);
-            showNotification('Failed to save user data: ' + error.message, true);
-            return Promise.reject(error);
+            console.error('Password file save error:', error);
+            showNotification(error.message, true);
         } finally {
-            isSaving = false;
+            state.isSaving = false;
+            hideSavingIndicator();
+        }
+    },
+
+    async saveScheduleFile() {
+        if (state.isSaving) return;
+        state.isSaving = true;
+        showSavingIndicator();
+        const url = `https://api.github.com/repos/${CONFIG.github.user}/${CONFIG.github.repo}/contents/${CONFIG.github.files.schedule}`;
+        try {
+            const content = ScheduleManager.generateScheduleFileContent();
+            const base64Content = btoa(content);
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${state.githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: 'Update schedule file',
+                    content: base64Content,
+                    sha: state.scheduleFileSha
+                })
+            });
+            if (!response.ok) throw new Error(`Failed to save schedule file: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+            state.scheduleFileSha = data.sha;
+            showNotification('Schedule changes saved successfully!');
+        } catch (error) {
+            console.error('Schedule file save error:', error);
+            showNotification(error.message, true);
+        } finally {
+            state.isSaving = false;
             hideSavingIndicator();
         }
     }
-    
-    // Add a new user
-    function addNewUser() {
-        const username = formatUsername(newUsername.value.trim());
-        // Use entered password or default if empty
-        const password = newPassword.value.trim() || config.defaultPassword;
+};
 
-        if (!username) {
-            showNotification('Username is required', true);
-            return;
-        }
+// User Management Functions
+const UserManager = {
+    parseUserData(content) {
+        state.usersData = content.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const parts = line.trim().split('|');
+                if (parts.length === 4) {
+                    return {
+                        username: parts[0].trim(),
+                        displayName: parts[1].trim(),
+                        password: parts[2].trim(),
+                        roles: parts[3].trim().split('-'),
+                        baseRole: this.getUserRole(parts[0].trim())
+                    };
+                } else if (parts.length === 3) {
+                    return {
+                        username: parts[0].trim(),
+                        displayName: parts[1].trim(),
+                        password: parts[2].trim(),
+                        roles: [this.getUserRole(parts[0].trim())],
+                        baseRole: this.getUserRole(parts[0].trim())
+                    };
+                } else if (parts.length === 2) {
+                    const username = parts[0].trim();
+                    const password = parts[1].trim();
+                    const displayName = username
+                        .split('_')
+                        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                        .join(' ');
+                    return {
+                        username,
+                        displayName,
+                        password,
+                        roles: [this.getUserRole(username)],
+                        baseRole: this.getUserRole(username)
+                    };
+                }
+                return null;
+            })
+            .filter(user => user !== null);
+        renderUserTable();
+    },
 
-        // Check if username already exists
-        if (usersData.some(user => user.username === username)) {
-            showNotification('This username already exists', true);
-            return;
-        }
+    getUserRole(user) {
+        if (Array.isArray(user.roles) && user.roles.includes('Mentor')) return 'mentor';
+        if (Array.isArray(user.roles) && user.roles.includes('Admin')) return 'admin';
+        if (Array.isArray(user.roles) && user.roles.includes('Guest')) return 'guest';
+        if (Array.isArray(user.roles) && user.roles.includes('Team Lead')) return 'teamlead';
+        return 'member';
+    },
 
-        // Generate display name from username
-        const displayName = generateDisplayName(username);
-        const baseRole = getUserRole(username);
+    formatUsername(input) {
+        return input.replace(/\s+/g, '_').toLowerCase();
+    },
 
-        // Add the new user with the new format
-        usersData.push({
-            username,
-            displayName,
-            password,
-            roles: [baseRole.charAt(0).toUpperCase() + baseRole.slice(1)],
-            baseRole
+    generateFileContent() {
+        return state.usersData
+            .map(user => `${user.username}|${user.displayName}|${user.password}|${user.roles.join('-')}`)
+            .join(',\n');
+    }
+};
+
+// Schedule Management Functions
+const ScheduleManager = {
+    parseScheduleData(content) {
+        state.scheduleData = content.split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+                const parts = line.trim().split('|');
+                if (parts.length >= 4) {
+                    return {
+                        date: parts[0].trim(),
+                        time: parts[1].trim(),
+                        type: parts[2].trim(),
+                        description: parts[3].trim()
+                    };
+                }
+                return null;
+            })
+            .filter(item => item !== null);
+        renderScheduleTable();
+    },
+
+    generateScheduleFileContent() {
+        return state.scheduleData
+            .map(item => `${item.date}|${item.time}|${item.type}|${item.description}`)
+            .join(',\n');
+    }
+};
+
+
+// UI Rendering Functions
+const UIRenderer = {
+    renderUserTable() {
+        const filteredUsers = state.usersData.filter(user => {
+            const searchFields = [
+                user.username.toLowerCase(),
+                user.displayName.toLowerCase(),
+                user.roles.join(' ').toLowerCase()
+            ];
+            return !state.currentSearchTerm ||
+                   searchFields.some(field => field.includes(state.currentSearchTerm));
         });
 
-        // Save the new user data
-        savePasswordFile().then(() => {
-            newUsername.value = '';
-            newPassword.value = '';
-            renderUserTable();
-
-            showNotification(`User added with ${password === config.defaultPassword ? 'default' : 'custom'} password and saved successfully!`);
+        elements.userTableBody.innerHTML = '';
+        filteredUsers.forEach((user, index) => {
+            const row = this.createUserRow(user, index);
+            elements.userTableBody.appendChild(row);
         });
-    }
-    
-    // Admin login
-    function adminLogin() {
-        const enteredPassword = adminPassword.value;
-        
-        if (enteredPassword === adminPasswordFromRepo) {
-            showPasswordManagement();
-            fetchPasswordFile();
-        } else {
-            adminLoginError.textContent = 'Incorrect admin password.';
-        }
-    }
-    
-    // Admin logout
-    function adminLogout() {
-        sessionStorage.removeItem('adminLoggedIn');
-        adminLoginForm.style.display = 'block';
-        passwordManagement.style.display = 'none';
-        adminPassword.value = '';
-    }
-    
-    // Handle Ctrl+S keyboard shortcut
-    function handleKeyboardShortcut(event) {
-        if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-            event.preventDefault();
-            
-            if (passwordManagement.style.display === 'block') {
-                savePasswordFile();
+
+        this.updateSearchStats(filteredUsers.length);
+    },
+
+    createUserRow(user, originalIndex) {
+        const row = document.createElement('tr');
+        row.className = 'user-row';
+        row.setAttribute('data-index', originalIndex);
+
+        // Username cell
+        const usernameCell = document.createElement('td');
+        const usernameInput = document.createElement('input');
+        usernameInput.type = 'text';
+        usernameInput.value = user.username;
+        usernameInput.className = UserManager.getUserRole(user);
+        usernameInput.addEventListener('change', e => {
+            const formattedUsername = UserManager.formatUsername(e.target.value);
+            usernameInput.value = formattedUsername;
+            state.usersData[originalIndex].username = formattedUsername;
+            const oldAutoDisplay = generateDisplayName(user.username);
+            if (user.displayName === oldAutoDisplay) {
+                state.usersData[originalIndex].displayName = generateDisplayName(formattedUsername);
             }
+            state.usersData[originalIndex].baseRole = UserManager.getUserRole(formattedUsername);
+            GitHubAPI.savePasswordFile();
+        });
+        usernameCell.appendChild(usernameInput);
+        row.appendChild(usernameCell);
+
+        // Display name cell
+        const displayNameCell = document.createElement('td');
+        const displayNameInput = document.createElement('input');
+        displayNameInput.type = 'text';
+        displayNameInput.value = user.displayName;
+        displayNameInput.className = UserManager.getUserRole(user);
+        displayNameInput.addEventListener('change', e => {
+            state.usersData[originalIndex].displayName = e.target.value;
+            GitHubAPI.savePasswordFile();
+        });
+        displayNameCell.appendChild(displayNameInput);
+        row.appendChild(displayNameCell);
+
+        // Password cell
+        const passwordCell = document.createElement('td');
+        const passwordInput = document.createElement('input');
+        passwordInput.type = 'text';
+        passwordInput.value = user.password;
+        passwordInput.className = UserManager.getUserRole(user);
+        passwordInput.addEventListener('change', e => {
+            state.usersData[originalIndex].password = e.target.value;
+            GitHubAPI.savePasswordFile();
+        });
+        passwordCell.appendChild(passwordInput);
+        row.appendChild(passwordCell);
+
+        // Roles cell
+        const rolesCell = document.createElement('td');
+        const rolesDisplay = document.createElement('div');
+        rolesDisplay.className = 'roles-display';
+        rolesDisplay.textContent = user.roles.join(', ');
+        rolesCell.appendChild(rolesDisplay);
+
+        const editRolesButton = document.createElement('button');
+        editRolesButton.className = 'btn btn-small';
+        editRolesButton.textContent = 'Edit Roles';
+        editRolesButton.addEventListener('click', () => openRolesEditor(originalIndex));
+        rolesCell.appendChild(editRolesButton);
+        row.appendChild(rolesCell);
+
+        // Actions cell
+        const actionsCell = this.createActionsCell(originalIndex);
+        row.appendChild(actionsCell);
+
+        return row;
+    },
+
+    createActionsCell(index) {
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-cell';
+
+        const moveUpButton = this.createMoveButton('&uarr;', 'Move Up', () => {
+            if (index > 0) {
+                [state.usersData[index], state.usersData[index - 1]] = [state.usersData[index - 1], state.usersData[index]];
+                GitHubAPI.savePasswordFile().then(() => {
+                    renderUserTable();
+                    showNotification('User moved up and saved.');
+                });
+            }
+        });
+
+        const moveDownButton = this.createMoveButton('&darr;', 'Move Down', () => {
+            if (index < state.usersData.length - 1) {
+                [state.usersData[index], state.usersData[index + 1]] = [state.usersData[index + 1], state.usersData[index]];
+                GitHubAPI.savePasswordFile().then(() => {
+                    renderUserTable();
+                    showNotification('User moved down and saved.');
+                });
+            }
+        });
+
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'btn btn-small btn-delete';
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => {
+            state.usersData.splice(index, 1);
+            GitHubAPI.savePasswordFile().then(() => {
+                renderUserTable();
+                showNotification('User deleted and saved.');
+            });
+        });
+
+        actionsCell.appendChild(moveUpButton);
+        actionsCell.appendChild(moveDownButton);
+        actionsCell.appendChild(deleteButton);
+        return actionsCell;
+    },
+
+
+    createMoveButton(html, title, onClick) {
+        const button = document.createElement('button');
+        button.className = 'btn btn-small';
+        button.innerHTML = html;
+        button.title = title;
+        button.addEventListener('click', onClick);
+        return button;
+    },
+
+    updateSearchStats(filteredCount) {
+        const total = state.usersData.length;
+        elements.searchStats.textContent = state.currentSearchTerm
+            ? `Showing ${filteredCount} of ${total} users`
+            : `Showing all ${total} users`;
+    },
+
+    renderScheduleTable() {
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
+        if (!scheduleTableBody) return;
+        scheduleTableBody.innerHTML = '';
+        state.scheduleData.forEach((item, index) => {
+            const row = this.createScheduleRow(item, index);
+            scheduleTableBody.appendChild(row);
+        });
+    },
+
+    createScheduleRow(item, index) {
+        const row = document.createElement('tr');
+        row.className = 'schedule-row';
+        row.setAttribute('data-index', index);
+
+        const createInputCell = (value, onChange) => {
+            const cell = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = value;
+            input.addEventListener('change', onChange);
+            input.addEventListener('focus', () => state.isEditorFocused = true);
+            input.addEventListener('blur', () => state.isEditorFocused = false);
+            cell.appendChild(input);
+            return cell;
+        };
+
+        row.appendChild(createInputCell(item.date, e => {
+            state.scheduleData[index].date = e.target.value;
+            GitHubAPI.saveScheduleFile();
+        }));
+        row.appendChild(createInputCell(item.time, e => {
+            state.scheduleData[index].time = e.target.value;
+            GitHubAPI.saveScheduleFile();
+        }));
+        row.appendChild(createInputCell(item.type, e => {
+            state.scheduleData[index].type = e.target.value;
+            GitHubAPI.saveScheduleFile();
+        }));
+        row.appendChild(createInputCell(item.description, e => {
+            state.scheduleData[index].description = e.target.value;
+            GitHubAPI.saveScheduleFile();
+        }));
+
+        const actionsCell = this.createScheduleActionsCell(index);
+        row.appendChild(actionsCell);
+        return row;
+    },
+
+    createScheduleActionsCell(index) {
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-cell';
+
+        const moveUpButton = this.createMoveButton('&uarr;', 'Move Up', () => {
+            if (index > 0) {
+                [state.scheduleData[index], state.scheduleData[index - 1]] = [state.scheduleData[index - 1], state.scheduleData[index]];
+                GitHubAPI.saveScheduleFile().then(() => {
+                    this.renderScheduleTable();
+                    showNotification('Schedule item moved up and saved.');
+                });
+            }
+        });
+
+        const moveDownButton = this.createMoveButton('&darr;', 'Move Down', () => {
+            if (index < state.scheduleData.length - 1) {
+                [state.scheduleData[index], state.scheduleData[index + 1]] = [state.scheduleData[index + 1], state.scheduleData[index]];
+                GitHubAPI.saveScheduleFile().then(() => {
+                    this.renderScheduleTable();
+                    showNotification('Schedule item moved down and saved.');
+                });
+            }
+        });
+
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'btn btn-small btn-delete';
+        deleteButton.textContent = 'Delete';
+        deleteButton.addEventListener('click', () => {
+            state.scheduleData.splice(index, 1);
+            GitHubAPI.saveScheduleFile().then(() => {
+                this.renderScheduleTable();
+                showNotification('Schedule item deleted and saved.');
+            });
+        });
+
+        actionsCell.appendChild(moveUpButton);
+        actionsCell.appendChild(moveDownButton);
+        actionsCell.appendChild(deleteButton);
+        return actionsCell;
+    }
+};
+
+// Notification System
+const NotificationSystem = {
+    show(message, isError = false) {
+        const notification = document.createElement('div');
+        notification.className = `notification ${isError ? 'error' : 'success'}`;
+        notification.textContent = message;
+
+        const progress = document.createElement('div');
+        progress.className = 'notification-progress';
+        notification.appendChild(progress);
+
+        elements.notificationContainer.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out forwards';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    }
+};
+
+// Style Management
+function initializeStyles() {
+    if (!document.getElementById('notification-styles')) {
+        addNotificationStyles();
+    }
+    if (!document.getElementById('user-row-styles')) {
+        addUserRowStyles();
+    }
+}
+
+// Initialize the application
+function initializePage() {
+    elements.adminLoginForm.style.display = 'block';
+    elements.passwordManagement.style.display = 'none';
+    sessionStorage.removeItem('adminLoggedIn');
+    elements.adminLoginButton.disabled = true;
+
+    GitHubAPI.fetchToken().then(() => {
+        if (state.githubToken) {
+            GitHubAPI.fetchAdminPassword();
+        }
+    });
+
+    // Set up tab functionality
+    if (elements.managementTabs) {
+        elements.passwordTabButton.addEventListener('click', () => {
+            switchTab('users');
+        });
+
+        elements.scheduleTabButton.addEventListener('click', () => {
+            switchTab('schedule');
+        });
+    }
+
+    if (elements.addScheduleButton) {
+        elements.addScheduleButton.addEventListener('click', handleAddScheduleItem);
+    }
+}
+
+// Helper Functions
+function createLogoutButton() {
+    const button = document.createElement('button');
+    button.id = 'logoutButton';
+    button.className = 'btn btn-secondary';
+    button.textContent = 'Logout';
+    button.style.marginLeft = '10px';
+
+    const buttonContainer = document.querySelector('.button-container') ||
+                           document.querySelector('.controls') ||
+                           document.querySelector('.form-actions');
+
+    if (buttonContainer) {
+        buttonContainer.appendChild(button);
+    } else {
+        const container = document.createElement('div');
+        container.className = 'form-actions button-container';
+        container.appendChild(button);
+        elements.passwordContent.appendChild(container);
+    }
+
+    return button;
+}
+
+function switchTab(tabName) {
+    if (tabName === 'users') {
+        elements.passwordTabContent.style.display = 'block';
+        elements.scheduleTabContent.style.display = 'none';
+        elements.passwordTabButton.classList.add('active');
+        elements.scheduleTabButton.classList.remove('active');
+    } else if (tabName === 'schedule') {
+        elements.passwordTabContent.style.display = 'none';
+        elements.scheduleTabContent.style.display = 'block';
+        elements.passwordTabButton.classList.remove('active');
+        elements.scheduleTabButton.classList.add('active');
+    }
+}
+
+function generateDisplayName(username) {
+    return username
+        .split('_')
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function showSavingIndicator() {
+    const indicator = document.getElementById('savingIndicator');
+    indicator.style.display = 'block';
+}
+
+function hideSavingIndicator() {
+    const indicator = document.getElementById('savingIndicator');
+    indicator.style.display = 'none';
+}
+
+function showNotification(message, isError = false) {
+    NotificationSystem.show(message, isError);
+}
+
+function handleAdminLogin() {
+    const enteredPassword = elements.adminPassword.value;
+    if (enteredPassword === state.adminPassword) {
+        showPasswordManagement();
+        GitHubAPI.fetchPasswordFile();
+    } else {
+        elements.adminLoginError.textContent = 'Incorrect admin password.';
+    }
+}
+
+function showPasswordManagement() {
+    elements.adminLoginForm.style.display = 'none';
+    elements.passwordManagement.style.display = 'block';
+}
+
+function handleAddUser() {
+    const username = UserManager.formatUsername(elements.newUsername.value.trim());
+    const password = elements.newPassword.value.trim() || CONFIG.defaults.password;
+
+    if (!username) {
+        showNotification('Username is required', true);
+        return;
+    }
+
+    if (state.usersData.some(user => user.username === username)) {
+        showNotification('This username already exists', true);
+        return;
+    }
+
+    const displayName = generateDisplayName(username);
+    const baseRole = UserManager.getUserRole({ roles: [] }); // Get default role
+
+    state.usersData.push({
+        username,
+        displayName,
+        password,
+        roles: [baseRole.charAt(0).toUpperCase() + baseRole.slice(1)],
+        baseRole
+    });
+
+    GitHubAPI.savePasswordFile().then(() => {
+        elements.newUsername.value = '';
+        elements.newPassword.value = '';
+        renderUserTable();
+        showNotification(`User added with ${password === CONFIG.defaults.password ? 'default' : 'custom'} password and saved successfully!`);
+    });
+}
+
+function handleAddScheduleItem() {
+    const date = elements.newScheduleDate.value.trim();
+    const time = elements.newScheduleTime.value.trim();
+    const type = elements.newScheduleType.value.trim();
+    const description = elements.newScheduleDescription.value.trim();
+
+    if (!date || !time || !type || !description) {
+        showNotification('All fields are required for schedule items', true);
+        return;
+    }
+
+    state.scheduleData.push({ date, time, type, description });
+    GitHubAPI.saveScheduleFile().then(() => {
+        elements.newScheduleDate.value = '';
+        elements.newScheduleTime.value = '';
+        elements.newScheduleType.value = '';
+        elements.newScheduleDescription.value = '';
+        UIRenderer.renderScheduleTable();
+        showNotification('Schedule item added and saved successfully!');
+    });
+}
+
+function setupScheduleInputListeners() {
+    const inputIds = ['newScheduleDate', 'newScheduleTime', 'newScheduleType', 'newScheduleDescription'];
+    inputIds.forEach(id => {
+        elements[id].addEventListener('keypress', e => {
+            if (e.key === 'Enter') handleAddScheduleItem();
+        });
+    });
+}
+
+function handleKeyboardShortcut(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        if (elements.passwordManagement.style.display === 'block') {
+            GitHubAPI.savePasswordFile();
         }
     }
-    
-    adminLoginButton.addEventListener('click', adminLogin);
-    
-    adminPassword.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            adminLogin();
+}
+
+function adminLogout() {
+    sessionStorage.removeItem('adminLoggedIn');
+    elements.adminLoginForm.style.display = 'block';
+    elements.passwordManagement.style.display = 'none';
+    elements.adminPassword.value = '';
+}
+
+function renderUserTable() {
+    UIRenderer.renderUserTable();
+}
+
+function renderScheduleTable() {
+    UIRenderer.renderScheduleTable();
+}
+
+
+// Roles Editor Functions
+function addRolesEditorModal() {
+    if (document.getElementById('rolesEditorModal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'rolesEditorModal';
+    modal.className = 'modal';
+    modal.style.display = 'none';
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h3>Edit User Roles</h3>
+            <div id="currentRolesList" class="current-roles-list"></div>
+            <div class="add-role-form">
+                <input type="text" id="newRoleInput" placeholder="Enter new role..." />
+                <button id="addRoleButton" class="btn">Add Role</button>
+            </div>
+            <div class="preset-roles">
+                <h4>Common Roles:</h4>
+                <div class="preset-buttons">
+                    <button class="preset-role" data-role="Member">Member</button>
+                    <button class="preset-role" data-role="Mentor">Mentor</button>
+                    <button class="preset-role" data-role="Team Lead">Team Lead</button>
+                    <button class="preset-role" data-role="Admin">Admin</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="closeRolesButton" class="btn">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add modal styles
+    const styleTag = document.createElement('style');
+    styleTag.id = 'roles-modal-styles';
+    styleTag.textContent = `
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #103a5a;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #1d5280;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .current-roles-list {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #0d314e;
+            border-radius: 5px;
+            min-height: 40px;
+        }
+
+        .role-tag {
+            display: inline-block;
+            background-color: #1d5280;
+            color: white;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .role-delete {
+            margin-left: 8px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+        }
+
+        .roledelete:hover {
+            color: #ff8a80;
+        }
+
+        .add-role-form {
+            display: flex;
+            margin: 15px 0;
+            gap: 10px;
+        }
+
+        .add-role-form input {
+            flex: 1;
+            padding: 8px;
+            background-color: #0d314e;
+            border: 1px solid #1d5280;
+            color: white;
+            border-radius: 3px;
+        }
+
+        .preset-roles {
+            margin: 15px 0;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .preset-role {
+            background-color: #1d5280;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .preset-role:hover {
+            background-color: #2d6290;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        /* Style for role in table */
+        .roles-display {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #5c9bd6;
+        }
+    `;
+    document.head.appendChild(styleTag);
+
+    // Set up event listeners for modal
+    const closeBtn = modal.querySelector('.close-modal');
+    closeBtn.addEventListener('click', closeRolesEditor);
+
+    const closeRolesBtn = document.getElementById('closeRolesButton');
+    closeRolesBtn.addEventListener('click', closeRolesEditor);
+
+    const addRoleBtn = document.getElementById('addRoleButton');
+    addRoleBtn.addEventListener('click', addNewRole);
+
+    const newRoleInput = document.getElementById('newRoleInput');
+    newRoleInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') {
+            addNewRole();
         }
     });
-    
-    addUserButton.addEventListener('click', addNewUser);
-    
-    newUsername.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            addNewUser();
+
+    // Set up preset role buttons
+    const presetButtons = modal.querySelectorAll('.preset-role');
+    presetButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const role = button.getAttribute('data-role');
+            addRoleToEditor(role);
+        });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', e => {
+        if (e.target === modal) {
+            closeRolesEditor();
         }
     });
-    
-    newPassword.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter' && newUsername.value.trim()) {
-            addNewUser();
-        }
+}
+
+function openRolesEditor(userIndex) {
+    state.currentEditingUserIndex = userIndex;
+    state.currentRoles = [...state.usersData[userIndex].roles];
+
+    const modal = document.getElementById('rolesEditorModal');
+    if (!modal) {
+        addRolesEditorModal();
+    }
+
+    const userName = state.usersData[userIndex].displayName;
+    const modalTitle = modal.querySelector('h3');
+    modalTitle.innerHTML = `Edit User Roles - <span style="color: #FFD700;">${userName}</span>`;
+
+    renderCurrentRoles();
+    document.getElementById('rolesEditorModal').style.display = 'block';
+}
+
+function closeRolesEditor() {
+    document.getElementById('rolesEditorModal').style.display = 'none';
+    state.currentEditingUserIndex = -1;
+    state.currentRoles = [];
+}
+
+function renderCurrentRoles() {
+    const rolesList = document.getElementById('currentRolesList');
+    rolesList.innerHTML = '';
+
+    if (state.currentRoles.length === 0) {
+        rolesList.innerHTML = '<em>No roles assigned</em>';
+        return;
+    }
+
+    state.currentRoles.forEach((role, index) => {
+        const roleTag = document.createElement('div');
+        roleTag.className = 'role-tag';
+
+        const roleText = document.createTextNode(role);
+        roleTag.appendChild(roleText);
+
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'role-delete';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.addEventListener('click', () => deleteRole(index));
+
+        roleTag.appendChild(deleteBtn);
+        rolesList.appendChild(roleTag);
     });
-    
-    logoutButton.addEventListener('click', adminLogout);
-    
-    document.addEventListener('keydown', handleKeyboardShortcut);
-    newUsername.addEventListener('focus', () => { isEditorFocused = true; });
-    newUsername.addEventListener('blur', () => { isEditorFocused = false; });
-    newPassword.addEventListener('focus', () => { isEditorFocused = true; });
-    newPassword.addEventListener('blur', () => { isEditorFocused = false; });
-    
-    initializePage();
-    
-    adminLoginButton.disabled = true;
-});
+}
+
+function deleteRole(index) {
+    state.currentRoles.splice(index, 1);
+    renderCurrentRoles();
+    saveRoleChangesToUser();
+}
+
+function addNewRole() {
+    const input = document.getElementById('newRoleInput');
+    const role = input.value.trim();
+
+    if (role) {
+        addRoleToEditor(role);
+        input.value = '';
+    }
+}
+
+function addRoleToEditor(role) {
+    if (role && !state.currentRoles.includes(role)) {
+        state.currentRoles.push(role);
+        renderCurrentRoles();
+        saveRoleChangesToUser();
+    }
+}
+
+function saveRoleChangesToUser() {
+    if (state.currentEditingUserIndex >= 0) {
+        state.usersData[state.currentEditingUserIndex].roles = state.currentRoles;
+        GitHubAPI.savePasswordFile().then(() => {
+            renderUserTable();
+            showNotification('User roles updated and saved successfully!');
+        });
+    }
+}
+
+function addNotificationStyles() {
+    if (document.getElementById('notification-styles')) return;
+
+    const styleTag = document.createElement('style');
+    styleTag.id = 'notification-styles';
+    styleTag.textContent = `
+        #notificationContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+        }
+
+        .notification {
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            animation: slideIn 0.3s ease-out forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification.success {
+            background-color: #103a5a;
+            color: #81c784;
+            border-left: 5px solid #81c784;
+        }
+
+        .notification.error {
+            background-color: #103a5a;
+            color: #ff8a80;
+            border-left: 5px solid #ff8a80;
+        }
+
+        .notification-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: rgba(255,255,255,0.3);
+            width: 100%;
+            transform-origin: left;
+            animation: progress 5s linear forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(120%); opacity: 0; }
+        }
+
+        @keyframes progress {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
+    `;
+    document.head.appendChild(styleTag);
+}
+
+function addUserRowStyles() {
+    if (document.getElementById('user-row-styles')) return;
+
+    const styleTag = document.createElement('style');
+    styleTag.id = 'user-row-styles';
+    styleTag.textContent = `
+        .user-row {
+            transition: background-color 0.3s ease;
+        }
+
+        .user-row:hover {
+            background-color: #0d314e;
+        }
+
+        .user-row td input {
+            width: 100%;
+            background-color: #103a5a;
+            color: #ffffff;
+            border: 1px solid #1d5280;
+            padding: 5px 8px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .user-row td input:focus {
+            background-color: #0d314e;
+            border-color: #5c9bd6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(92, 155, 214, 0.25);
+        }
+
+        .user-row td input.admin {
+            border-left: 3px solid rgb(170, 145, 0);
+            font-weight: bold;
+        }
+
+        .user-row td input.mentor {
+            border-left: 3px solid #81c784;
+            font-weight: bold;
+        }
+
+        .user-row td input.member {
+            border-left: 3px solid rgb(148, 203, 255);
+        }
+
+        .user-row td input.teamlead {
+            border-left: 3px solid rgb(37, 119, 156);
+        }
+
+        .user-row td input.guest {
+            border-left: 3px solid #c0c0c0;
+            font-style: italic;
+        }
+
+        .saving-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #103a5a;
+            color: #5c9bd6;
+            padding: 8px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .keyboard-shortcut-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(16, 58, 90, 0.8);
+            color: #ffffff;
+            padding: 8px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9998;
+            font-size: 12px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(styleTag);
+
+    const savingIndicator = document.createElement('div');
+    savingIndicator.className = 'saving-indicator';
+    savingIndicator.id = 'savingIndicator';
+    savingIndicator.textContent = 'Saving changes...';
+    document.body.appendChild(savingIndicator);
+
+    const shortcutIndicator = document.createElement('div');
+    shortcutIndicator.className = 'keyboard-shortcut-indicator';
+    shortcutIndicator.id = 'shortcutIndicator';
+    shortcutIndicator.textContent = 'Press Ctrl+S to save changes';
+    document.body.appendChild(shortcutIndicator);
+}
+
+// Export functionality if needed
+const AdminPanel = {
+    init: initializePage,
+    UserManager,
+    ScheduleManager,
+    UIRenderer,
+    NotificationSystem
+};

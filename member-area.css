@@ -230,11 +230,63 @@ section:nth-child(even) {
 }
 
 /* Schedule Section - Updated for horizontal layout */
+.schedule-controls {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.control-button {
+    background-color: #e6c060;
+    color: #0a2638;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.control-button:hover {
+    background-color: #d9b04c;
+    transform: translateY(-2px);
+}
+
 .schedule-container {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: hidden;
     margin: 0 auto;
     padding: 20px 0;
+    position: relative;
+    touch-action: pan-x;
+}
+
+.calendar-section {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.calendar-button {
+    background-color: #5c9bd6;
+    color: #f0f5f9;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.calendar-button:hover {
+    background-color: #4a89c4;
+    transform: translateY(-2px);
+}
+
+.full-calendar {
+    margin-top: 20px;
+    background-color: #103a5a;
+    border-radius: 8px;
+    padding: 20px;
+    display: none;
 }
 
 .schedule-horizontal-layout {
