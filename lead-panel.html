@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Management - Pathfinder Tech Robotics</title>
+    <link rel="icon" href="../ptrlogo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./member-login.css">
+    <style>
+        .lead-container {
+            max-width: 800px;
+        }
+        
+        .tool-list {
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #103a5a;
+        }
+        
+        table th, table td {
+            padding: 10px 15px;
+            text-align: left;
+            border-bottom: 1px solid #0d314e;
+        }
+        
+        table th {
+            background-color: #0d314e;
+            color: #5c9bd6;
+        }
+        
+        .actions-cell {
+            white-space: nowrap;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        
+        .btn-return {
+            border-color: #81c784;
+            color: #81c784;
+        }
+        
+        .btn-return:hover {
+            background-color: #81c784;
+            color: #0a2638;
+        }
+        
+        .status-message {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: rgba(46, 125, 50, 0.2);
+            color: #81c784;
+            border-left: 3px solid #81c784;
+        }
+        
+        .error {
+            background-color: rgba(198, 40, 40, 0.2);
+            color: #ff8a80;
+            border-left: 3px solid #ff8a80;
+        }
+        
+        .lead-login {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #5c9bd6;
+        }
+
+        .search-container {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #1d5280;
+            background-color: #0d314e;
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #5c9bd6;
+            box-shadow: 0 0 0 2px rgba(92, 155, 214, 0.25);
+        }
+
+        .search-stats {
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #5c9bd6;
+        }
+        
+        /* Checkout status indicators */
+        .checkout-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            margin-left: 5px;
+        }
+        
+        .checkout-active {
+            background-color: rgba(255, 152, 0, 0.2);
+            color: #ffb74d;
+            border: 1px solid #ffb74d;
+        }
+        
+        .tool-chip {
+            display: inline-block;
+            background-color: #1d5280;
+            color: white;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        
+        .username-cell.member {
+            border-left: 3px solid rgb(148, 203, 255);
+        }
+        
+        .username-cell.mentor {
+            border-left: 3px solid #81c784;
+        }
+        
+        .username-cell.admin {
+            border-left: 3px solid rgb(170, 145, 0);
+        }
+        
+        .username-cell.teamlead {
+            border-left: 3px solid rgb(37, 119, 156);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-content">
+            <div class="logo-container">
+                <img src="../ptrlogo.ico" alt="Team Logo" class="logo-img">
+                <div class="logo-text">
+                    <h1>Pathfinder Tech Robotics</h1>
+                    <p>Team 8709</p>
+                </div>
+            </div>
+            
+            <nav>
+                <ul>
+                    <li><a href="index.html">Return to Main Site</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <!-- Lead Section -->
+    <section class="login-section">
+        <div class="container">
+            <h2 class="section-title">Team Lead <span>Tool Management</span></h2>
+            
+            <div class="login-container lead-container" id="leadContent">
+                <!-- Lead login form (initially shown) -->
+                <div id="leadLoginForm" class="lead-login">
+                    <div class="form-group">
+                        <label for="leadPassword">Team Lead Password:</label>
+                        <input type="password" id="leadPassword" name="leadPassword" placeholder="Enter team lead password">
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="leadLoginButton" class="btn">Login</button>
+                    </div>
+                    
+                    <div id="leadLoginError" class="error-message"></div>
+                </div>
+                
+                <!-- Tool management UI (shown after login) -->
+                <div id="toolManagement" style="display: none;">
+                    <div id="notificationContainer"></div>
+                    
+                    <div id="loadingIndicator" class="loading">Loading tool checkout data...</div>
+                    
+                    <div id="toolContent" style="display: none;">
+                        <h3>Current Tool Checkouts</h3>
+                        
+                        <div class="tool-list">
+                            <div class="search-container">
+                                <input type="text" id="toolSearchInput" placeholder="Search users or tools..." class="search-input">
+                                <div class="search-stats" id="searchStats">Loading checkout information...</div>
+                            </div>
+                            <table id="toolTable">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Checked Out Tools</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="toolTableBody">
+                                    <!-- Tool checkout data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    
+                        <div class="form-actions button-container">
+                            <button id="logoutButton" class="btn btn-secondary">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h2>Pathfinder Tech Robotics</h2>
+                    <p>FRC Team 8709</p>
+                    <p>Building a Legacy through Innovation and Excellence</p>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html#about">About Us</a></li>
+                        <li><a href="index.html#programs">Activities</a></li>
+                        <li><a href="media">Media</a></li>
+                        <li><a href="sponsors">Sponsors</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Pathfinder Tech Robotics Team 8709. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="lead-panel.js"></script>
+    <script>
+        const allowedReferrer = "member-area.html";
+        
+        if (!document.referrer.includes(allowedReferrer)) {
+            window.location.href = "./index.html";
+        }
+
+        document.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            return false;
+        }, true);  
+    </script>
+</body>
+</html>

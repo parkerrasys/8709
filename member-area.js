@@ -116,130 +116,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const today = new Date();
         const currentDayIndex = today.getDay();
-        let currentOffset = 0;
 
         const scheduleContainer = document.querySelector('.schedule-container');
-        const goToCurrentDayBtn = document.getElementById('goToCurrentDay');
         if (!scheduleContainer) return;
 
-        function updateScheduleDisplay(startOffset) {
-            const horizontalLayout = document.querySelector('.schedule-horizontal-layout');
-            horizontalLayout.innerHTML = '';
+        scheduleContainer.innerHTML = '';
 
-            for (let offset = startOffset; offset < startOffset + 7; offset++) {
-                let dayIndex = (currentDayIndex + offset) % 7;
-                if (dayIndex < 0) dayIndex += 7;
+        const horizontalLayout = document.createElement('div');
+        horizontalLayout.className = 'schedule-horizontal-layout';
 
-                const dayName = days[dayIndex];
-                const dayDate = new Date(today);
-                dayDate.setDate(today.getDate() + offset);
-                const dayFormatted = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
+        for (let offset = -3; offset <= 3; offset++) {
+            let dayIndex = (currentDayIndex + offset) % 7;
+            if (dayIndex < 0) dayIndex += 7;
 
-                const scheduleForDay = scheduleEntries.filter(entry => 
-                    entry.day === dayFormatted || entry.day === dayName
-                );
+            const dayName = days[dayIndex];
+            const dayDate = new Date(today);
+            dayDate.setDate(today.getDate() + offset);
+            const dayFormatted = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
 
-                const dayElement = createDayElement(dayName, dayFormatted, scheduleForDay[0], offset === 0);
-                horizontalLayout.appendChild(dayElement);
-            }
+            const scheduleForDay = scheduleEntries.filter(entry => 
+                entry.day === dayFormatted || entry.day === dayName
+            );
 
-            goToCurrentDayBtn.style.display = startOffset !== -3 ? 'inline-block' : 'none';
+            const dayElement = createDayElement(dayName, dayFormatted, scheduleForDay[0], offset === 0);
+            horizontalLayout.appendChild(dayElement);
         }
 
-        scheduleContainer.innerHTML = '<div class="schedule-horizontal-layout"></div>';
-        updateScheduleDisplay(-3);
-
-        // Mouse wheel scrolling
-        scheduleContainer.addEventListener('wheel', (e) => {
-            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-            e.preventDefault();
-            currentOffset += e.deltaY > 0 ? 1 : -1;
-            currentOffset = Math.max(-3, currentOffset);
-            updateScheduleDisplay(currentOffset);
-        });
-
-        // Touch scrolling
-        let touchStartX = 0;
-        scheduleContainer.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-        });
-
-        scheduleContainer.addEventListener('touchmove', (e) => {
-            const touchEndX = e.touches[0].clientX;
-            const diff = touchStartX - touchEndX;
-
-            if (Math.abs(diff) > 50) {
-                currentOffset += diff > 0 ? 1 : -1;
-                currentOffset = Math.max(-3, currentOffset);
-                updateScheduleDisplay(currentOffset);
-                touchStartX = touchEndX;
-            }
-        });
-
-        // Go to current day button
-        goToCurrentDayBtn.addEventListener('click', () => {
-            currentOffset = -3;
-            updateScheduleDisplay(currentOffset);
-        });
-
-        // Show next meeting notification
-        const nextMeeting = findNextMeeting(scheduleEntries);
-        if (nextMeeting) {
-            showNextMeetingNotification(nextMeeting);
-        }
-    }
-
-    function findNextMeeting(scheduleEntries) {
-        const today = new Date();
-        const currentDateStr = `${today.getMonth() + 1}/${today.getDate()}`;
-        
-        return scheduleEntries.find(entry => {
-            const [month, day] = entry.day.split('/');
-            const entryDate = new Date(today.getFullYear(), month - 1, day);
-            return entryDate >= today;
-        });
-    }
-
-    function showNextMeetingNotification(meeting) {
-        const notification = document.createElement('div');
-        notification.className = 'meeting-notification';
-        notification.innerHTML = `
-            <p><strong>Next Meeting:</strong> ${meeting.day} at ${meeting.time}</p>
-            <p>Location: ${meeting.location}</p>
-            <p>${meeting.description}</p>
-            <button class="close-notification">✕</button>
-        `;
-
-        document.body.appendChild(notification);
-
-        notification.querySelector('.close-notification').addEventListener('click', () => {
-            notification.remove();
-        });
-
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 10000);
-    }
-
-    // Calendar functionality
-    document.getElementById('viewFullCalendar').addEventListener('click', function() {
-        const calendarDiv = document.getElementById('fullCalendar');
-        if (calendarDiv.style.display === 'none') {
-            calendarDiv.style.display = 'block';
-            this.textContent = 'Hide Calendar';
-            displayFullCalendar(calendarDiv);
-        } else {
-            calendarDiv.style.display = 'none';
-            this.textContent = 'View Full Calendar';
-        }
-    });
-
-    function displayFullCalendar(container) {
-        // Calendar implementation will go here
-        // This is a placeholder for now
-        container.innerHTML = '<p>Full calendar view coming soon!</p>';
+        scheduleContainer.appendChild(horizontalLayout);
     }
 
     function createDayElement(dayName, dayFormatted, schedule, isCurrentDay) {

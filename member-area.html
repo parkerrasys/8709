@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Area - Pathfinder Tech Robotics</title>
-    <link rel="icon" href="ptrlogo.ico" type="image/x-icon">
+    <link rel="icon" href="./ptrlogo.ico" type="image/x-icon">
     <link rel="stylesheet" href="member-area.css">
 </head>
-
 <body>
     <!-- Header -->
     <header>
@@ -20,7 +18,7 @@
                     <p>Team 8709</p>
                 </div>
             </div>
-
+            
             <nav>
                 <ul>
                     <li><a href="#meetings">Meetings</a></li>
@@ -34,57 +32,110 @@
             </nav>
         </div>
     </header>
-
+    
     <!-- Welcome Hero Section -->
     <section class="welcome">
         <div class="container">
             <h2>Welcome, <span id="memberNameDisplay">Team Member</span>!</h2>
-            <div data-role="Walmart">
-                <p class="last-login">Arn't you supposed to be at walmart???</span></p>
-            </div>
+            <div data-role="Walmart"><p class="last-login">Arn't you supposed to be at walmart???</span></p></div>
             <p class="tagline">Team Member Portal</p>
-            <div data-role="Member">
-                <p class="last-login">Last login: <span id="lastLoginTime">April 10, 2025, 14:30</span></p>
-            </div>
+            <div data-role="Member"><p class="last-login">Last login: <span id="lastLoginTime">April 10, 2025, 14:30</span></p></div>
             <br>
             <p>Your roles: <span id="memberRolesDisplay"></span></p>
             <br>
-            <div data-role="Admin"><a href="./admin-panel.html" class="admin-button">Admin Panel</a></div>
+            <div data-role="Admin"><a href="./admin-panel.html" class="role-buttons">Admin Panel</a></div>
+            <div data-role="Team Lead"><a href="./lead-panel.html" class="role-buttons">Lead Panel</a></div>
         </div>
     </section>
+    
+    <!-- Upcoming Meetings Section -->
+    <section id="meetings" class="meetings">
+        <div class="container">
+            <h2 class="section-title">Upcoming Meetings</h2>
+            
+            <div class="card-grid">
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
 
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
 
+                <div class="card highlight">
+                    <div class="card-header">
+                        <h3>Next Meeting</h3>
+                        <span class="card-badge">Example</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="meeting-date">April 12, 2025 - 3:30 PM</p>
+                        <p class="meeting-location">CAD Room (222)</p>
+                        <p class="meeting-description">general meeting</p>
+                        <p class="meeting-agenda"><strong>Agenda:</strong></p>
+                        <ul>
+                            <li>Robot drive testing</li>
+                            <li>Competition strategy</li>
+                            <li>Programming</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
     <!-- Schedule Section -->
     <section id="schedule" class="schedule">
         <div class="container">
             <h2 class="section-title">Meeting Schedule</h2>
+            
             <div class="schedule-container">
                 <div class="schedule-horizontal-layout">
                     <!-- Content will be generated by JavaScript -->
                 </div>
             </div>
-            <div class="schedule-controls">
-                <button id="goToCurrentDay" class="control-button" style="display: none;">Go to Current Day</button>
-            </div>
-            <div class="calendar-section">
-                <button id="viewFullCalendar" class="calendar-button">View Full Calendar</button>
-                <div id="fullCalendar" class="full-calendar" style="display: none;"></div>
-            </div>
         </div>
     </section>
-
+    
     <!-- Tasks Section -->
     <section id="tasks" class="tasks">
         <div class="container">
             <h2 class="section-title">Team Tasks</h2>
-
+            
             <div class="task-filters">
                 <button class="task-filter active" data-filter="all">All Tasks</button>
                 <button class="task-filter" data-filter="mechanical">Mechanical</button>
                 <button class="task-filter" data-filter="programming">Programming</button>
                 <button class="task-filter" data-filter="electrical">Electrical</button>
             </div>
-
+            
             <div class="task-list">
                 <div class="task-item" data-category="mechanical">
                     <div class="task-header">
@@ -98,7 +149,7 @@
                         <p><strong>Status:</strong> Not Started</p>
                     </div>
                 </div>
-
+                
                 <div class="task-item" data-category="programming">
                     <div class="task-header">
                         <h3>Programming Example</h3>
@@ -111,7 +162,7 @@
                         <p><strong>Status:</strong> Not Started</p>
                     </div>
                 </div>
-
+                
                 <div class="task-item" data-category="electrical">
                     <div class="task-header">
                         <h3>Electrical Example</h3>
@@ -127,25 +178,37 @@
             </div>
         </div>
     </section>
-
+    
     <!-- Resources Section -->
     <section id="resources" class="resources">
         <div class="container">
             <h2 class="section-title">Team Resources</h2>
-
+            
             <div class="resources-grid">
-
+                <!-- <div class="resource-card">
+                    <div class="resource-icon">📁</div>
+                    <h3>CAD Files</h3>
+                    <p>Access the latest CAD models and designs for the robot.</p>
+                    <a href="#" class="resource-link">Access Files</a>
+                </div> -->
+                
                 <div class="resource-card">
                     <div class="resource-icon">💻</div>
                     <h3>Code Repository</h3>
                     <p>GitHub repository with our robot code.</p>
                     <a href="https://github.com/FRC-8709" target="_blank" class="resource-link">View Repository</a>
                 </div>
-
+                
+                <!-- <div class="resource-card">
+                    <div class="resource-icon">📅</div>
+                    <h3>Team Calendar</h3>
+                    <p>Comprehensive calendar with all team events and deadlines.</p>
+                    <a href="#" class="resource-link">View Calendar</a>
+                </div> -->
             </div>
         </div>
     </section>
-
+    
     <!-- Footer -->
     <footer>
         <div class="container">
@@ -155,7 +218,7 @@
                     <p>FRC Team 8709</p>
                     <p>Building a Legacy through Innovation and Excellence</p>
                 </div>
-
+                
                 <div class="footer-links">
                     <h3>Member Links</h3>
                     <ul>
@@ -165,38 +228,31 @@
                         <li><a href="#resources">Resources</a></li>
                     </ul>
                 </div>
-
+                
                 <div class="footer-links">
                     <h3>Team Contacts</h3>
                     <ul>
-                        <li>Team Leads:</li>
-                        <li><a href="mailto:jacob.stehlin@pathfinderstudents.org">Jacob</a> | <a
-                                href="mailto:kaleb.myrick@pathfinderstudents.org">Kaleb</a> | <a
-                                href="mailto:parker.rasys@pathfinderstudents.org">Parker</a> | <a
-                                href="mailto:leeann.murdza@pathfinderstudents.org">Leeann</a></li>
-
+                        <li>Team Leads:</li><li><a href="mailto:jacob.stehlin@pathfinderstudents.org">Jacob</a> | <a href="mailto:kaleb.myrick@pathfinderstudents.org">Kaleb</a> | <a href="mailto:parker.rasys@pathfinderstudents.org">Parker</a> | <a href="mailto:leeann.murdza@pathfinderstudents.org">Leeann</a></li>
+                        
                         <br>
                         <li>Mentors:</li>
-                        <li><a href="mailto:bren@pathfindertech.org">Mr. Bren</a> | <a
-                                href="mailto:nizio@pathfindertech.org">Mr. Nizio</a> | <a
-                                href="mailto:hlavoie2003@gmail.com">Harrison</a></li>
+                        <li><a href="mailto:bren@pathfindertech.org">Mr. Bren</a> | <a href="mailto:nizio@pathfindertech.org">Mr. Nizio</a> | <a href="mailto:hlavoie2003@gmail.com">Harrison</a></li>
                     </ul>
                 </div>
             </div>
-
+            
             <div class="footer-bottom">
                 <p>&copy; 2025 Pathfinder Tech Robotics Team 8709. All Rights Reserved.</p>
             </div>
         </div>
     </footer>
-
+    
     <script src="member-area.js"></script>
     <script>
-        document.addEventListener('contextmenu', function (event) {
+        document.addEventListener('contextmenu', function(event) {
             event.preventDefault();
             return false;
         }, true);
     </script>
 </body>
-
 </html>

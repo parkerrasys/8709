@@ -1,0 +1,80 @@
+
+.tool-checkout-form {
+    margin-bottom: 30px;
+}
+
+.tool-list {
+    margin-top: 20px;
+}
+
+.tool-item {
+    background-color: #103a5a;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-left: 4px solid #5c9bd6;
+}
+
+.tool-name {
+    color: #e6c060;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.tool-details {
+    color: #cde3f9;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.checkout-button {
+    background-color: #5c9bd6;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.checkout-button:hover {
+    background-color: #4a8ac4;
+}
+
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    background-color: #0d314e;
+    border: 1px solid #5c9bd6;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 16px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #e6c060;
+}
+
+.status-message {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+}
+
+.success {
+    background-color: rgba(92, 155, 214, 0.1);
+    color: #5c9bd6;
+    border-left: 4px solid #5c9bd6;
+}
+
+.error {
+    background-color: rgba(224, 82, 99, 0.1);
+    color: #e05263;
+    border-left: 4px solid #e05263;
+}

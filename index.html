@@ -3,10 +3,390 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pathfinder Tech Robotics - Team 8709</title>
-    <link rel="icon" href="../ptrlogo.ico" type="image/x-icon">
-    <link rel="stylesheet" href="style.css">
+    <title>Pathfinder Tech Robotics</title>
+    <link rel="icon" href="ptrlogo.ico" type="image/x-icon">
     <style>
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            background-color: #0a2638;
+            color: #f0f5f9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header styles */
+        header {
+            background-color: #0d314e;
+            padding: 15px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-img {
+            width: 100px;
+            height: auto;
+            margin-right: 15px;
+        }
+        
+        .logo-text h1 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e6c060;
+        }
+        
+        .logo-text p {
+            color: #5c9bd6;
+            font-size: 14px;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+        
+        nav ul li {
+            margin-left: 5px;
+        }
+        
+        nav ul li a {
+            color: #f0f5f9;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        nav ul li a:hover {
+            background-color: #5c9bd6;
+            color: #f0f5f9;
+        }
+        
+        /* Hero section */
+        .hero {
+            padding: 80px 0;
+            background-color: #0a2638;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: url('gear-pattern.png');
+            opacity: 0.05;
+            z-index: 0;
+        }
+        
+        .hero .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+            color: #f0f5f9;
+        }
+        
+        .hero span {
+            color: #e6c060;
+        }
+        
+        .hero p.tagline {
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: #5c9bd6;
+        }
+        
+        .hero p.description {
+            font-size: 16px;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #cde3f9;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: transparent;
+            color: #e6c060;
+            padding: 10px 25px;
+            margin-top: 25px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid #e6c060;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #e6c060;
+            color: #0a2638;
+            transform: translateY(-2px);
+        }
+        
+        /* About section */
+        .about {
+            padding: 60px 0;
+            background-color: #0d314e;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 40px;
+            color: #e6c060;
+            position: relative;
+        }
+        
+        .section-title:after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background-color: #5c9bd6;
+            margin: 10px auto 0;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        
+        .about-card {
+            background-color: #103a5a;
+            border-radius: 5px;
+            padding: 25px;
+            transition: transform 0.3s;
+            border-left: 4px solid #e6c060;
+        }
+        
+        .about-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .about-card h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #5c9bd6;
+        }
+        
+        .about-card p {
+            color: #cde3f9;
+            line-height: 1.6;
+        }
+        
+        /* Programs section */
+        .programs {
+            padding: 60px 0;
+            background-color: #0a2638;
+        }
+        
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        
+        .program-card {
+            background-color: #103a5a;
+            border-radius: 5px;
+            overflow: hidden;
+            transition: transform 0.3s;
+            border-top: 4px solid #5c9bd6;
+            text-align: center;
+        }
+        
+        .program-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .program-image {
+            height: 180px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .program-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .program-content {
+            padding: 20px;
+        }
+        
+        .program-content h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #e6c060;
+        }
+        
+        .program-content p {
+            color: #cde3f9;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        /* Achievements section */
+        .achievements {
+            padding: 60px 0;
+            background-color: #0d314e;
+        }
+        
+        .achievements-list {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+        
+        .achievement-item {
+            text-align: center;
+            margin: 20px;
+            width: 200px;
+        }
+        
+        .achievement-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #e6c060;
+            margin-bottom: 10px;
+        }
+        
+        .achievement-text {
+            color: #cde3f9;
+            font-size: 16px;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: #0d314e;
+            padding: 40px 0 20px;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+        
+        .footer-logo h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #e6c060;
+        }
+        
+        .footer-logo p {
+            color: #cde3f9;
+            margin-bottom: 15px;
+        }
+        
+        .footer-links h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #5c9bd6;
+            position: relative;
+        }
+        
+        .footer-links h3:after {
+            content: '';
+            display: block;
+            width: 30px;
+            height: 2px;
+            background-color: #e6c060;
+            margin-top: 8px;
+        }
+        
+        .footer-links ul {
+            list-style: none;
+        }
+        
+        .footer-links ul li {
+            margin-bottom: 8px;
+        }
+        
+        .footer-links ul li a {
+            color: #cde3f9;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .footer-links ul li a:hover {
+            color: #e6c060;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            margin-top: 30px;
+            border-top: 1px solid #0c2b43;
+            color: #cde3f9;
+            font-size: 14px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .logo-container {
+                margin-bottom: 15px;
+                justify-content: center;
+            }
+            
+            nav ul {
+                justify-content: center;
+                margin-top: 10px;
+            }
+            
+            nav ul li {
+                margin: 3px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -14,24 +394,19 @@
     <header>
         <div class="container header-content">
             <div class="logo-container">
-                <img src="../ptrlogo.ico" alt="No Logo" class="logo-img">
+                <img src="ptrlogo.ico" alt="Pathfinder Logo" class="logo-img">
                 <div class="logo-text">
                     <h1>Pathfinder Tech Robotics</h1>
-                    <p>Team 8709</p>
                 </div>
             </div>
             
             <nav>
                 <ul>
+                    <li><a href="#test">Test</a></li>
                     <li><a href="#about">About Us</a></li>
-                    <li><a href="#programs">Activities</a></li>
-                    <li><a href="media">Media</a></li>
-                    <li><a href="sponsors">Sponsors</a></li>
-                    <li><a href="events">Events</a></li>
-                    <li><a href="awards">Awards</a></li>
-                    <li><a href="history">History</a></li>
-                    <li><a href="members">Members</a></li>
-                    <li><a href="member-area.html">For Members</a></li>
+                    <li><a href="frc.html">FRC Team</a></li>
+                    <li><a href="vex.html">VEX Team</a></li>
+                    <li><a href="#programs">Programs</a></li>
                 </ul>
             </nav>
         </div>
@@ -40,32 +415,29 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h2>We Are<br><span>Pathfinder Tech Robotics</span></h2>
-            <p class="tagline">Building a Legacy</p>
-            <p class="description">FRC Team 8709 Pathfinder Tech is a robotics team from Pathfinder Tech! We are dedicated to innovation, engineering, and teamwork. We compete in FIRST Robotics Competitions to bring more technical creativity and challenges to the school!</p>
-            <a href="#about" class="btn">Learn More</a>
+            <h2>Welcome to<br><span>Pathfinder Tech Robotics</span></h2>
+            <p class="tagline">Building Skills, Creating Futures</p>
+            <p class="description">Pathfinder Regional Vocational Technical High School's robotics program provides students with hands-on experience in engineering, programming, and design through FRC and VEX robotics competitions. Our program combines technical education with real-world problem-solving to prepare students for careers in STEM fields.</p>
+            <a href="./frc.html" class="btn">FRC Team</a>
+            <br>
+            <a href="./vex.html" class="btn">VEX Teams</a>
         </div>
     </section>
     
     <!-- About Section -->
     <section id="about" class="about">
         <div class="container">
-            <h2 class="section-title">About Us</h2>
+            <h2 class="section-title">About Our Program</h2>
             
             <div class="about-content">
                 <div class="about-card">
                     <h3>Our Mission</h3>
-                    <p>At Pathfinder Tech, we're dedicated to developing innovative solutions through robotics engineering. We focus on building technical skills, fostering teamwork, and preparing our members for futures in STEM fields through hands-on experience in the FIRST Robotics Competition.</p>
+                    <p>The Pathfinder Regional Robotics Program aims to inspire and empower students through hands-on robotics experience. We develop technical skills, critical thinking, and teamwork while providing opportunities for students to apply classroom knowledge to real-world engineering challenges.</p>
                 </div>
                 
                 <div class="about-card">
-                    <h3>Our Team</h3>
-                    <p>Our team consists of talented students from Pathfinder Tech who bring diverse skills to the table. From programming and electrical engineering to mechanical design and strategy development, each member plays a crucial role in our success.</p>
-                </div>
-                
-                <div class="about-card">
-                    <h3>Our Values</h3>
-                    <p>Teamwork, innovation, and perseverance define our approach to robotics. We believe in challenging ourselves, learning from failures, and celebrating successes together. Our team culture promotes continuous improvement and technical excellence.</p>
+                    <h3>Our Community</h3>
+                    <p>We create a supportive environment where students of all experience levels can contribute and grow. Our school brings together students from 9 different towns, letting them collaborate, problem-solve, and celebrate achievements as they represent Pathfinder Tech!</p>
                 </div>
             </div>
         </div>
@@ -74,27 +446,28 @@
     <!-- Programs Section -->
     <section id="programs" class="programs">
         <div class="container">
-            <h2 class="section-title">What We Do</h2>
+            <h2 class="section-title">Our Robotics Programs</h2>
             
             <div class="program-grid">
                 <div class="program-card">
+                    <div class="program-image">
+                        <img src="/api/placeholder/400/320" alt="FRC Robotics Team">
+                    </div>
                     <div class="program-content">
-                        <h3>FIRST Robotics Competition</h3>
-                        <p>We design, build, and program robots to compete in the annual FIRST Robotics Competition. Our team tackles new challenges each season, creating innovative solutions under tight deadlines while developing technical and collaborative skills.</p>
+                        <h3>FIRST Robotics Competition (FRC)</h3>
+                        <p>Our FRC team designs and builds industrial-sized robots to compete in high-intensity competitions. Students gain experience with advanced control systems, programming, and mechanical design while working with mentors from industry professionals.</p>
+                        <a href="frc.html" class="btn">Learn More</a>
                     </div>
                 </div>
                 
                 <div class="program-card">
-                    <div class="program-content">
-                        <h3>Technical Development</h3>
-                        <p>Beyond the competition season, we work on various technical projects to expand our capabilities. These include programming challenges, mechanical design improvements, and electrical systems optimization to prepare for future competitions.</p>
+                    <div class="program-image">
+                        <img src="/api/placeholder/400/320" alt="VEX Robotics Team">
                     </div>
-                </div>
-                
-                <div class="program-card">
                     <div class="program-content">
-                        <h3>Team Development</h3>
-                        <p>We think team development is an important part of our team. Through our schools techincal programs and collaborative activities. New members learn from experienced teammates, making sure knowledge is transfered down as team members graduate!</p>
+                        <h3>VEX Robotics Competition</h3>
+                        <p>Our VEX Robotics program engages students in designing and building robots using the VEX platform. This accessible entry point to competitive robotics helps develop foundational skills in mechanics, electronics, and programming through year-round competitions.</p>
+                        <a href="vex.html" class="btn">Learn More</a>
                     </div>
                 </div>
             </div>
@@ -107,36 +480,30 @@
             <div class="footer-content">
                 <div class="footer-logo">
                     <h2>Pathfinder Tech Robotics</h2>
-                    <p>FRC Team 8709</p>
-                    <p>Building a Legacy through Innovation and Excellence</p>
+                    <p>Pathfinder Regional Vocational Technical High School</p>
                 </div>
                 
                 <div class="footer-links">
                     <h3>Quick Links</h3>
                     <ul>
                         <li><a href="#about">About Us</a></li>
-                        <li><a href="#programs">Activities</a></li>
-                        <li><a href="media">Media</a></li>
-                        <li><a href="sponsors">Sponsors</a></li>
+                        <li><a href="#programs">Programs</a></li>
                     </ul>
                 </div>
                 
                 <div class="footer-links">
-                    <h3>More Info</h3>
+                    <h3>Our Teams</h3>
                     <ul>
-                        <li><a href="events">Events</a></li>
-                        <li><a href="awards">Awards</a></li>
-                        <li><a href="history">History</a></li>
-                        <li><a href="members">Members</a></li>
+                        <li><a href="frc.html">FRC Team 8709</a></li>
+                        <li><a href="vex.html">VEX Teams 8709</a></li>
                     </ul>
                 </div>
                 
                 <div class="footer-links">
-                    <h3>FIRST Robotics</h3>
+                    <h3>Resources</h3>
                     <ul>
-                        <li><a href="https://www.firstinspires.org/" target="_blank">FIRST Website</a></li>
-                        <li><a href="https://www.firstinspires.org/robotics/frc" target="_blank">FRC Program</a></li>
-                        <li><a href="https://www.firstinspires.org/resource-library" target="_blank">Resources</a></li>
+                        <li><a href="https://www.firstinspires.org/" target="_blank">FIRST Robotics</a></li>
+                        <li><a href="https://www.vexrobotics.com/" target="_blank">VEX Robotics</a></li>
                     </ul>
                 </div>
             </div>
@@ -146,12 +513,12 @@
             </div>
         </div>
     </footer>
+    
+    <script>
+        document.addEventListener('contextmenu', function(event) {
+        event.preventDefault();
+        return false;
+        }, true);  
+    </script>
 </body>
-<script src="script.js"></script>
-<script>
-    document.addEventListener('contextmenu', function(event) {
-    event.preventDefault();
-    return false;
-    }, true);  
-</script>
 </html>
